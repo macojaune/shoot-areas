@@ -1,40 +1,16 @@
-import { relations, sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm"
 import {
   index,
   int,
+  numeric,
   primaryKey,
   sqliteTable,
   text,
-} from "drizzle-orm/sqlite-core";
-import { type AdapterAccount } from "next-auth/adapters";
+} from "drizzle-orm/sqlite-core"
+import { type AdapterAccount } from "next-auth/adapters"
+import { places } from "~/server/db/schemas/place"
 
-/**
- * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
- * database instance for multiple projects.
- *
- * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
- */
-// export const createTable = sqliteTableCreator((name) => `shootareas_${name}`);
-
-export const posts = sqliteTable(
-  "post",
-  {
-    id: int("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-    name: text("name", { length: 256 }),
-    createdById: text("createdById", { length: 255 })
-      .notNull()
-      .references(() => users.id),
-    createdAt: int("created_at", { mode: "timestamp" })
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
-    updatedAt: int("updatedAt", { mode: "timestamp" }),
-  },
-  (example) => ({
-    createdByIdIdx: index("createdById_idx").on(example.createdById),
-    nameIndex: index("name_idx").on(example.name),
-  })
-);
-
+//Auth
 export const users = sqliteTable("user", {
   id: text("id", { length: 255 }).notNull().primaryKey(),
   name: text("name", { length: 255 }),
@@ -43,11 +19,18 @@ export const users = sqliteTable("user", {
     mode: "timestamp",
   }).default(sql`CURRENT_TIMESTAMP`),
   image: text("image", { length: 255 }),
-});
+  portfolio: text("portfolio"),
+  updatedAt: int("updatedAt", { mode: "timestamp" }),
+  createdAt: int("created_at", { mode: "timestamp" })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+})
 
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
-}));
+  places: many(places),
+  shoots: many(shoots),
+}))
 
 export const accounts = sqliteTable(
   "account",
@@ -74,11 +57,11 @@ export const accounts = sqliteTable(
     }),
     userIdIdx: index("account_userId_idx").on(account.userId),
   })
-);
+)
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
   user: one(users, { fields: [accounts.userId], references: [users.id] }),
-}));
+}))
 
 export const sessions = sqliteTable(
   "session",
@@ -92,11 +75,11 @@ export const sessions = sqliteTable(
   (session) => ({
     userIdIdx: index("session_userId_idx").on(session.userId),
   })
-);
+)
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, { fields: [sessions.userId], references: [users.id] }),
-}));
+}))
 
 export const verificationTokens = sqliteTable(
   "verificationToken",
@@ -108,4 +91,4 @@ export const verificationTokens = sqliteTable(
   (vt) => ({
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
   })
-);
+)

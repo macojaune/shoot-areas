@@ -5,7 +5,7 @@ import { getServerAuthSession } from "~/server/auth";
 import { api } from "~/trpc/server";
 
 export default async function Home() {
-  const hello = await api.post.hello({ text: "from tRPC" });
+  const hello = await api.place.hello({ text: "from tRPC" });
   const session = await getServerAuthSession();
 
   return (
@@ -66,7 +66,7 @@ async function CrudShowcase() {
   const session = await getServerAuthSession();
   if (!session?.user) return null;
 
-  const latestPost = await api.post.getLatest();
+  const latestPost = await api.place.getLatest();
 
   return (
     <div className="w-full max-w-xs">
