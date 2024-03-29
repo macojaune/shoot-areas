@@ -1,6 +1,9 @@
-import { relations, sql } from "drizzle-orm"
+import { InferInsertModel, InferSelectModel, relations, sql } from "drizzle-orm"
 import { index, int, numeric, sqliteTable, text } from "drizzle-orm/sqlite-core"
-import { shoots, users } from "~/server/db/auth"
+import { users } from "~/server/db/schemas/auth"
+import { shoots } from "~/server/db/schemas/shoot"
+import { InferResultType } from "~/server/db/types"
+import { createInsertSchema, createSelectSchema } from "drizzle-zod"
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -75,3 +78,10 @@ export const categoriesToPlacesRelations = relations(
     }),
   })
 )
+
+export type Place = InferResultType<"places", { user: true; categories: true }>
+export const selectPlaceSchema = createSelectSchema(places)
+export const insertPlaceSchema = createInsertSchema(places)
+
+export type Category = InferResultType<"categories">
+export const selectCategorySchema = createSelectSchema(categories)

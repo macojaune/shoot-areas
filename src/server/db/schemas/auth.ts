@@ -9,6 +9,7 @@ import {
 } from "drizzle-orm/sqlite-core"
 import { type AdapterAccount } from "next-auth/adapters"
 import { places } from "~/server/db/schemas/place"
+import { shoots } from "~/server/db/schemas/shoot"
 
 //Auth
 export const users = sqliteTable("user", {
