@@ -10,7 +10,7 @@ import { Button } from "~/app/components/ui/button"
 export const PlaceCard: React.FC<{
   place: Place
   size?: "sm" | "hero" | "default"
-}> = ({ size = "default" }) => {
+}> = ({ place, size = "default" }) => {
   const sizes = useMemo(() => {
     switch (size) {
       case "sm":
@@ -18,7 +18,7 @@ export const PlaceCard: React.FC<{
       case "hero":
         return { width: 424, height: 424 }
       default:
-        return { layout: "responsive", width: 400, height: 400 }
+        return { width: 400, height: 400 }
     }
   }, [size])
 
@@ -26,28 +26,30 @@ export const PlaceCard: React.FC<{
     <Card
       className={cn(size === "sm" && "border-l/support border shadow-none")}
     >
-      <CardHeader className="p-0">
+      <CardHeader className="relative p-0">
         <Image
           src={`https://picsum.photos/${sizes?.width ?? "400"}/${sizes?.height ?? "400"}`}
           {...sizes}
-          alt="Maison de la mangrove"
+          alt={place.title}
+          className="h-full w-full object-cover"
         />
       </CardHeader>
       <CardFooter
         className={cn(
-          "border-l/support flex flex-row justify-between",
+          "border-l/support flex flex-row justify-between gap-x-4 lg:px-6",
           size === "sm" && "p-5"
         )}
       >
         <div className="flex flex-col justify-between">
-          <p
+          <h3
             className={cn(
               size === "hero" && "text-2xl",
-              size === "sm" && "text-base"
+              size === "sm" && "text-base",
+              "text-l/support font-bold"
             )}
           >
-            Maison de la mangrove
-          </p>
+            {place.title}
+          </h3>
           <p
             className={cn(
               "font-mono",
@@ -55,11 +57,11 @@ export const PlaceCard: React.FC<{
               size === "sm" && "text-xs"
             )}
           >
-            Les Abymes, Guadeloupe
+            {place.city}, {place.country}
           </p>
         </div>
-        <Link href="" passHref>
-          <Button size="lg">Voir</Button>
+        <Link href={place.slug} passHref>
+          <Button size={size === "sm" ? "sm" : "lg"}>Voir</Button>
         </Link>
       </CardFooter>
     </Card>

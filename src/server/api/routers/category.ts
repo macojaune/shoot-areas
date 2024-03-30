@@ -10,11 +10,10 @@ import { categories } from "~/server/db/schemas"
 
 export const categoryRouter = createTRPCRouter({
   all: publicProcedure
-    .input(z.object({ offset: z.number().optional().default(0) }))
+    .input(z.object({ limit: z.number().optional().default(4) }))
     .query(({ ctx, input }) => {
       return ctx.db.query.categories.findMany({
-        limit: 4,
-        offset: input.offset,
+        limit: input.limit,
       })
     }),
   create: protectedProcedure

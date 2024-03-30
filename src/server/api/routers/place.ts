@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 
 import {
   createTRPCRouter,
@@ -10,19 +10,33 @@ import {
   selectCategorySchema,
   insertPlaceSchema,
   categoriesToPlaces,
+  categories,
+  selectPlaceSchema,
 } from "~/server/db/schemas/place"
 
 export const placeRouter = createTRPCRouter({
-  byCategory: publicProcedure
-    .input(selectCategorySchema.pick({ id: true }))
+  all: publicProcedure.query(({ ctx }) => {
+    return ctx.db.query.places.findMany()
+  }),
+  bySlug: publicProcedure
+    .input(selectPlaceSchema.pick({ slug: true }))
     .query(({ ctx, input }) => {
-      return ctx.db.query.places.findMany({
+      return ctx.db.query.places.findFirst({
+        where: eq(places.slug, input.slug),
         with: {
-          categoriesToPlaces: {
-            where: eq(categoriesToPlaces.categoryId, input.id),
-          },
+          categories: { with: { category: true } },
         },
       })
+    }),
+  byCategory: publicProcedure
+    .input(selectCategorySchema.pick({ slug: true }))
+    .query(({ ctx, input }) => {
+      return ctx.db
+        .select()
+        .from(places)
+        .leftJoin(categoriesToPlaces, eq(categoriesToPlaces.placeId, places.id))
+        .leftJoin(categories, eq(categories.id, categoriesToPlaces.categoryId))
+        .where(eq(categories.slug, input.slug))
     }),
   create: protectedProcedure
     .input(insertPlaceSchema.omit({ id: true }))
@@ -36,6 +50,11 @@ export const placeRouter = createTRPCRouter({
     return ctx.db.query.places.findMany({
       orderBy: (place, { desc }) => [desc(place.createdAt)],
       limit: 4,
+    })
+  }),
+  getRandom: publicProcedure.query(({ ctx }) => {
+    return ctx.db.query.places.findFirst({
+      orderBy: sql`RANDOM()`,
     })
   }),
 })

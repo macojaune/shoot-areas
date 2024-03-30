@@ -18,11 +18,12 @@ export const places = sqliteTable(
   "place",
   {
     id: int("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-    title: text("title"),
+    title: text("title").notNull(),
+    slug: text("slug").notNull().unique(),
     userId: text("createdById")
       .notNull()
       .references(() => users.id),
-    position: text("position", { mode: "json" }),
+    position: text("position", { mode: "json" }).$type<[number, number]>(),
     country: text("country"),
     address: text("address"),
     zipcode: text("zipcode"),
@@ -45,7 +46,8 @@ export const places = sqliteTable(
 )
 export const categories = sqliteTable("category", {
   id: int("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-  title: text("title"),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
   description: text("description"),
 })
 export const categoriesToPlaces = sqliteTable("category_to_place", {
@@ -63,7 +65,7 @@ export const categoriesRelations = relations(categories, ({ many }) => ({
 export const placesRelations = relations(places, ({ one, many }) => ({
   user: one(users, { fields: [places.userId], references: [users.id] }),
   shoots: many(shoots),
-  categoriesToPlaces: many(categoriesToPlaces),
+  categories: many(categoriesToPlaces),
 }))
 export const categoriesToPlacesRelations = relations(
   categoriesToPlaces,

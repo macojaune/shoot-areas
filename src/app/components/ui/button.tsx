@@ -16,7 +16,7 @@ const buttonVariants = cva(
         outline:
           "border border-l/support bg-l/bg shadow-sm hover:bg-l/primary text-l/support",
         secondary:
-          "bg-l/bg text-l/support border border-l/support shadow-sm hover:bg-l/bg/80",
+          "bg-l/secondary text-l/support border border-l/support shadow-sm hover:bg-l/secondary/80",
         tertiary:
           "bg-l/support text-l/bg border border-l/support shadow-sm hover:bg-l/support/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
@@ -25,7 +25,7 @@ const buttonVariants = cva(
       size: {
         default: "h-9 px-4 py-2",
         sm: "h-8 px-3 text-xs",
-        lg: "h-10 px-8",
+        lg: "h-12 px-8 text-lg",
         icon: "h-9 w-9",
       },
       pill: {

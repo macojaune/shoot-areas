@@ -9,16 +9,23 @@ import { type Category } from "~/server/db/schemas"
 const PlaceList: React.FC<{
   categories: Category[]
 }> = ({ categories: list }) => {
-  const [offset, setOffset] = useState(0)
-  const [categoryId, setCategoryId] = useState<number | null>(null)
+  const [category, setCategory] = useState("trending")
 
-  const { data: categories, refetch } = api.category.all.useQuery({ offset })
-  const { data: placesByCategory } = api.place.byCategory.useQuery({
-    id: categoryId,
-  })
+  const { data: categories, refetch } = api.category.all.useQuery({})
+  const { data: placesByCategory } = api.place.byCategory.useQuery(
+    {
+      slug: category,
+    },
+    { enabled: category !== null }
+  )
   return (
     <div className="">
-      <ToggleGroup type="single" className="lg:my-16">
+      <ToggleGroup
+        type="single"
+        className="lg:my-16"
+        value={category}
+        onValueChange={(val) => setCategory(val)}
+      >
         <ToggleGroupItem
           variant="outline"
           pill
@@ -28,33 +35,29 @@ const PlaceList: React.FC<{
         >
           Populaire
         </ToggleGroupItem>
-        {categories?.map((cat) => (
-          <ToggleGroupItem
-            key={cat.title}
-            variant="outline"
-            pill
-            size="lg"
-            value={cat.title}
-          >
-            {cat.title}
-          </ToggleGroupItem>
-        ))}
+        {categories?.map((cat) => {
+          if (cat.slug === "trending") return null
+          return (
+            <ToggleGroupItem
+              key={cat.slug}
+              variant="outline"
+              pill
+              size="lg"
+              value={cat.slug}
+            >
+              {cat.title}
+            </ToggleGroupItem>
+          )
+        })}
+        {/*  todo send to search page*/}
         {categories && categories?.length > 1 && (
-          <Button
-            variant="outline"
-            pill
-            className="h-auto px-6 py-3 text-xl"
-            onClick={async () => {
-              setOffset((old) => old + 4)
-              await refetch()
-            }}
-          >
+          <Button variant="outline" pill className="h-auto px-6 py-3 text-xl">
             Autre
           </Button>
         )}
       </ToggleGroup>
       <div className="grid grid-cols-3 gap-6">
-        {placesByCategory?.map((place) => (
+        {placesByCategory?.map(({ place }) => (
           <PlaceCard place={place} key={place.title} />
         ))}
       </div>
