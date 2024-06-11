@@ -7,7 +7,6 @@ import {
 import { type Adapter } from "next-auth/adapters"
 import EmailProvider from "next-auth/providers/email"
 
-import { env } from "~/env"
 import { db } from "~/server/db"
 
 /**
@@ -37,6 +36,7 @@ declare module "next-auth" {
  * @see https://next-auth.js.org/configuration/options
  */
 export const authOptions: NextAuthOptions = {
+  debug: process.env.NODE_ENV === "development",
   callbacks: {
     session: ({ session, user }) => ({
       ...session,
@@ -48,7 +48,10 @@ export const authOptions: NextAuthOptions = {
   },
   adapter: DrizzleAdapter(db) as Adapter,
   providers: [
-    EmailProvider({ server: env.EMAIL_SERVER, from: env.EMAIL_FROM }),
+    EmailProvider({
+      server: process.env.EMAIL_SERVER,
+      from: process.env.EMAIL_FROM,
+    }),
 
     /**
      * ...add more providers here.
@@ -60,6 +63,9 @@ export const authOptions: NextAuthOptions = {
      * @see https://next-auth.js.org/providers/github
      */
   ],
+  pages: {
+    signIn: "/connexion",
+  },
 }
 
 /**
