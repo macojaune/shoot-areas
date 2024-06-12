@@ -1,10 +1,10 @@
 import { getServerAuthSession } from "~/server/auth"
 import { api } from "~/trpc/server"
-import { Button } from "~/app/components/ui/button"
-import { PlaceCard } from "~/app/components/place-card"
-import PlaceList from "~/app/components/place-list"
-import { SkeletonCard } from "~/app/components/ui/skeleton"
+import { Button } from "~/components/ui/button"
+import { PlaceCard } from "~/components/place-card"
+import PlaceList from "~/components/place-list"
 import Link from "next/link"
+import { SkeletonCard } from "~/components/ui/skeleton"
 
 export default async function Home() {
   const session = await getServerAuthSession()
@@ -21,7 +21,7 @@ export default async function Home() {
   return (
     <main className="flex min-h-screen flex-col text-l/support">
       <div className="container flex grow flex-col bg-l/bg lg:flex-row">
-        <div className="order-2 flex h-max flex-col justify-center border-b border-r border-l/support bg-l/primary p-8 lg:order-1 lg:min-h-0 lg:w-2/5 lg:gap-y-8 lg:px-20 lg:py-16">
+        <div className="order-2 flex flex-col justify-center border-b border-r border-l/support bg-l/primary p-8 lg:order-1 lg:min-h-0 lg:w-2/5 lg:gap-y-8 lg:px-20 lg:py-16">
           <h1 className="text-5xl font-medium tracking-tight lg:text-6xl lg:leading-[72pt]">
             Trouve le lieu de ton prochain shoot
           </h1>
@@ -40,7 +40,11 @@ export default async function Home() {
           </div>
         </div>
         <div className="order-1 flex w-full flex-col items-center justify-center border-b border-l/support bg-l/secondary p-8 lg:order-2 lg:w-3/5 lg:px-20 lg:py-16">
-          {randomPlace ? <PlaceCard place={randomPlace} /> : <SkeletonCard />}
+          {randomPlace ? (
+            <PlaceCard place={randomPlace} />
+          ) : (
+            <SkeletonCard size="hero" />
+          )}
         </div>
       </div>
       <div className="container border-b border-l/support bg-l/bg px-6 py-12 lg:px-24 lg:py-20">
@@ -50,13 +54,17 @@ export default async function Home() {
             Avec un peu de chance, l'herbe y est encore fraiche…
           </p>
         </div>
-        <div className=" grid grid-cols-4 gap-x-6">
-          {recentPlaces.map((rp) => (
-            <PlaceCard size="sm" place={rp} key={rp.id} />
-          ))}
+        <div className="grid grid-cols-4 gap-x-6">
+          {recentPlaces?.length > 0
+            ? recentPlaces.map((rp) => (
+                <PlaceCard size="sm" place={rp} key={rp.id} />
+              ))
+            : Array(4)
+                .fill({})
+                .map((_, i) => <SkeletonCard key={i} size="sm" />)}
         </div>
       </div>
-      <div className="container border-b border-l/support bg-l/bg lg:py-12">
+      <div className="container bg-l/bg lg:py-12">
         <div className="flex flex-col items-center justify-center lg:mb-10 lg:gap-2">
           <h2 className="text-center text-l/support lg:text-5xl">
             Explore les lieux les plus populaires

@@ -1,8 +1,5 @@
 import { getServerAuthSession } from "~/server/auth"
-import EmailLoginForm from "../components/login-form"
-import { Button } from "~/app/components/ui/button"
-import { signOut } from "next-auth/react"
-
+import LoginForm from "~/components/login-form"
 export default async function Auth() {
   const session = await getServerAuthSession()
   console.log("login session:", session)
@@ -14,7 +11,7 @@ export default async function Auth() {
             <h2>Connecté en tant que {session.user.email}</h2>
           </div>
         ) : (
-          <EmailLoginForm />
+          <LoginForm />
         )}
       </div>
     </main>

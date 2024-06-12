@@ -1,13 +1,10 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter"
-import {
-  getServerSession,
-  type DefaultSession,
-  type NextAuthOptions,
-} from "next-auth"
+import { type DefaultSession, type NextAuthOptions } from "next-auth"
 import { type Adapter } from "next-auth/adapters"
 import EmailProvider from "next-auth/providers/email"
 
 import { db } from "~/server/db"
+import { getServerSession } from "next-auth/next"
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
