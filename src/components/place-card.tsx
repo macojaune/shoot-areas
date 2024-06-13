@@ -1,5 +1,5 @@
 "use client"
-import type { Place } from "~/server/db/schemas"
+import { type PlaceWithAll } from "~/server/db/schemas"
 import { useMemo } from "react"
 import { Card, CardFooter, CardHeader } from "~/components/ui/card"
 import { cn } from "~/lib/utils"
@@ -8,7 +8,7 @@ import Link from "next/link"
 import { Button } from "~/components/ui/button"
 
 export const PlaceCard: React.FC<{
-  place: Place
+  place: PlaceWithAll
   size?: "sm" | "hero" | "default"
 }> = ({ place, size = "default" }) => {
   const sizes = useMemo(() => {
@@ -57,7 +57,7 @@ export const PlaceCard: React.FC<{
               size === "sm" && "text-xs"
             )}
           >
-            {place.city}, {place.country}
+            {place?.city?.name}, {place?.country?.name}
           </p>
         </div>
         <Link href={place.slug} passHref>

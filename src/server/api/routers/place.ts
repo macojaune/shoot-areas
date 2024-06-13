@@ -12,6 +12,8 @@ import {
   categoriesToPlaces,
   categories,
   selectPlaceSchema,
+  cities,
+  countries,
 } from "~/server/db/schemas/place"
 import slugify from "slugify"
 
@@ -26,6 +28,8 @@ export const placeRouter = createTRPCRouter({
         where: eq(places.slug, input.slug),
         with: {
           categories: { with: { category: true } },
+          country: true,
+          city: true,
         },
       })
     }),
@@ -37,6 +41,8 @@ export const placeRouter = createTRPCRouter({
         .from(places)
         .leftJoin(categoriesToPlaces, eq(categoriesToPlaces.placeId, places.id))
         .leftJoin(categories, eq(categories.id, categoriesToPlaces.categoryId))
+        .innerJoin(cities, eq(cities.id, places.cityId))
+        .innerJoin(countries, eq(countries.id, places.countryId))
         .where(eq(categories.slug, input.slug))
     }),
   create: protectedProcedure
@@ -60,11 +66,13 @@ export const placeRouter = createTRPCRouter({
   getRecent: publicProcedure.query(({ ctx }) => {
     return ctx.db.query.places.findMany({
       orderBy: (place, { desc }) => [desc(place.createdAt)],
+      with: { country: true, city: true },
       limit: 4,
     })
   }),
   getRandom: publicProcedure.query(({ ctx }) => {
     return ctx.db.query.places.findFirst({
+      with: { country: true, city: true },
       orderBy: sql`RANDOM()`,
     })
   }),

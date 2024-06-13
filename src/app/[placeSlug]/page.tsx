@@ -46,15 +46,15 @@ export default async function PlacePage({
       <Suspense fallback={<div>Loading...</div>}>
         <div className="flex flex-row gap-x-4">
           <Badge size="md" variant="secondary">
-            {place?.country}
+            {place?.country.name}
           </Badge>
         </div>
         <div className="flex flex-row items-center gap-4 lg:justify-between">
           <h1 className="text-4xl font-medium tracking-tight text-l/support lg:mb-2 lg:text-5xl">
             {place?.title}
-            <small className="line-clamp-1 text-right text-lg font-normal text-l/support/50 lg:text-left">
+            <small className="text-right text-lg font-normal text-l/support/50 lg:text-left">
               <span className="hidden lg:inline">, </span>
-              {place?.city}
+              {place?.city.name}
             </small>
           </h1>
           <a

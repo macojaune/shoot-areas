@@ -24,11 +24,8 @@ const PlaceForm = () => {
     "en liberté, à éviter s'il pleut etc.)"
 
   //todo fetch countries from db
-  const countries = [
-    { id: 1, name: "Guadeloupe", cities: [{ id: 1, name: "Petit-bourg" }] },
-    { id: 2, name: "Martinique", cities: [{ id: 33, name: "Fort-de-France" }] },
-    { id: 3, name: "France Héxagonale", cities: [{ id: 75, name: "Paris" }] },
-  ]
+  const { data: countries, isLoading } = api.country.all.useQuery()
+
   const router = useRouter()
   const { mutate, isPending } = api.place.create.useMutation({
     onSuccess: (data) => {
@@ -194,8 +191,11 @@ const PlaceForm = () => {
                     <SelectValue placeholder="Choisis un Pays" />
                   </SelectTrigger>
                   <SelectContent>
-                    {countries.map((country) => (
-                      <SelectItem value={country.id.toString()}>
+                    {countries?.map((country) => (
+                      <SelectItem
+                        value={country.id.toString()}
+                        key={country.id}
+                      >
                         {country.name}
                       </SelectItem>
                     ))}
@@ -258,12 +258,12 @@ const PlaceForm = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {countries
-                      .find(
+                      ?.find(
                         (c) =>
                           c.id === parseInt(field.form.getFieldValue("country"))
                       )
                       ?.cities.map((city) => (
-                        <SelectItem value={city.id.toString()}>
+                        <SelectItem value={city.id.toString()} key={city.id}>
                           {city.name}
                         </SelectItem>
                       ))}

@@ -1,17 +1,9 @@
-import { InferInsertModel, InferSelectModel, relations, sql } from "drizzle-orm"
+import { relations, sql } from "drizzle-orm"
 import { index, int, numeric, sqliteTable, text } from "drizzle-orm/sqlite-core"
 import { users } from "~/server/db/schemas/auth"
 import { shoots } from "~/server/db/schemas/shoot"
-import { InferResultType } from "~/server/db/types"
+import { type InferResultType } from "~/server/db/types"
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"
-
-/**
- * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
- * database instance for multiple projects.
- *
- * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
- */
-// export const createTable = sqliteTableCreator((name) => `shootareas_${name}`);
 
 //Place
 export const places = sqliteTable(
@@ -24,10 +16,14 @@ export const places = sqliteTable(
       .notNull()
       .references(() => users.id),
     position: text("position", { mode: "json" }).$type<[number, number]>(),
-    country: text("country"),
+    countryId: int("country")
+      .references(() => countries.id)
+      .notNull(),
     address: text("address"),
     zipcode: text("zipcode"),
-    city: text("city"),
+    cityId: int("city")
+      .references(() => cities.id)
+      .notNull(),
     description: text("description"),
     isPublic: int("isPublic", { mode: "boolean" }),
     //average of all shoots
@@ -59,6 +55,17 @@ export const categoriesToPlaces = sqliteTable("category_to_place", {
     .notNull()
     .references(() => places.id),
 })
+export const countries = sqliteTable("country", {
+  id: int("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+})
+export const cities = sqliteTable("city", {
+  id: int("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  countryId: int("countryId")
+    .notNull()
+    .references(() => countries.id),
+})
 export const categoriesRelations = relations(categories, ({ many }) => ({
   categoriesToPlaces: many(categoriesToPlaces),
 }))
@@ -66,6 +73,11 @@ export const placesRelations = relations(places, ({ one, many }) => ({
   user: one(users, { fields: [places.userId], references: [users.id] }),
   shoots: many(shoots),
   categories: many(categoriesToPlaces),
+  country: one(countries, {
+    fields: [places.countryId],
+    references: [countries.id],
+  }),
+  city: one(cities, { fields: [places.cityId], references: [cities.id] }),
 }))
 export const categoriesToPlacesRelations = relations(
   categoriesToPlaces,
@@ -80,11 +92,22 @@ export const categoriesToPlacesRelations = relations(
     }),
   })
 )
+export const countriesRelations = relations(countries, ({ many }) => ({
+  cities: many(cities),
+  places: many(places),
+}))
+export const citiesRelations = relations(cities, ({ one, many }) => ({
+  country: one(countries, {
+    fields: [cities.countryId],
+    references: [countries.id],
+  }),
+  places: many(places),
+}))
 
-export type Place = InferResultType<"places", {}>
+export type Place = InferResultType<"places", { country: true; city: true }>
 export type PlaceWithAll = InferResultType<
   "places",
-  { user: true; categories: true }
+  { user: true; categories: true; country: true; city: true }
 >
 export const selectPlaceSchema = createSelectSchema(places)
 export const insertPlaceSchema = createInsertSchema(places)

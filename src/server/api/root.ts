@@ -1,6 +1,7 @@
 import { placeRouter } from "~/server/api/routers/place"
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc"
 import { categoryRouter } from "~/server/api/routers/category"
+import { countryRouter } from "~/server/api/routers/country"
 
 /**
  * This is the primary router for your server.
@@ -10,6 +11,7 @@ import { categoryRouter } from "~/server/api/routers/category"
 export const appRouter = createTRPCRouter({
   place: placeRouter,
   category: categoryRouter,
+  country: countryRouter,
 })
 
 // export type definition of API
