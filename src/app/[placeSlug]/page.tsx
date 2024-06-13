@@ -1,9 +1,9 @@
 import { api } from "~/trpc/server"
-import PlacePhotoGrid from "~/app/components/place-photogrid"
+import PlacePhotoGrid from "~/components/place-photogrid"
 import React, { type FC, type ReactElement, Suspense } from "react"
 
-import { Button } from "~/app/components/ui/button"
-import { Badge } from "~/app/components/ui/badge"
+import { Button } from "~/components/ui/button"
+import { Badge } from "~/components/ui/badge"
 import { twMerge } from "tailwind-merge"
 
 const MarkBlock: FC<{
@@ -49,7 +49,7 @@ export default async function PlacePage({
             {place?.country}
           </Badge>
         </div>
-        <div className="flex flex-row items-center  gap-4 lg:justify-between">
+        <div className="flex flex-row items-center gap-4 lg:justify-between">
           <h1 className="text-4xl font-medium tracking-tight text-l/support lg:mb-2 lg:text-5xl">
             {place?.title}
             <small className="line-clamp-1 text-right text-lg font-normal text-l/support/50 lg:text-left">

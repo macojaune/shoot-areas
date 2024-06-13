@@ -31,7 +31,7 @@ export const places = sqliteTable(
     description: text("description"),
     isPublic: int("isPublic", { mode: "boolean" }),
     //average of all shoots
-    mark: numeric("mark").default("0"),
+    mark: numeric("mark").default(0),
     accessibility: numeric("accessibility").default("0"),
     traffic: numeric("traffic").default("0"),
     createdAt: int("created_at", { mode: "timestamp" })
@@ -81,7 +81,11 @@ export const categoriesToPlacesRelations = relations(
   })
 )
 
-export type Place = InferResultType<"places", { user: true; categories: true }>
+export type Place = InferResultType<"places", {}>
+export type PlaceWithAll = InferResultType<
+  "places",
+  { user: true; categories: true }
+>
 export const selectPlaceSchema = createSelectSchema(places)
 export const insertPlaceSchema = createInsertSchema(places)
 

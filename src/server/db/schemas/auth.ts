@@ -2,7 +2,6 @@ import { relations, sql } from "drizzle-orm"
 import {
   index,
   int,
-  numeric,
   primaryKey,
   sqliteTable,
   text,
@@ -13,9 +12,9 @@ import { shoots } from "~/server/db/schemas/shoot"
 
 //Auth
 export const users = sqliteTable("user", {
-  id: text("id", { length: 255 }).notNull().primaryKey(),
-  name: text("name", { length: 255 }),
-  email: text("email", { length: 255 }).notNull(),
+  id: text("id").notNull().primaryKey(),
+  name: text("name"),
+  email: text("email").notNull(),
   emailVerified: int("emailVerified", {
     mode: "timestamp",
   }).default(sql`CURRENT_TIMESTAMP`),

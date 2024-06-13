@@ -13,6 +13,7 @@ import {
   categories,
   selectPlaceSchema,
 } from "~/server/db/schemas/place"
+import slugify from "slugify"
 
 export const placeRouter = createTRPCRouter({
   all: publicProcedure.query(({ ctx }) => {
@@ -39,10 +40,20 @@ export const placeRouter = createTRPCRouter({
         .where(eq(categories.slug, input.slug))
     }),
   create: protectedProcedure
-    .input(insertPlaceSchema.omit({ id: true }))
+    .input(
+      insertPlaceSchema.omit({
+        id: true,
+        createdAt: true,
+        updatedAt: true,
+        slug: true,
+        userId: true,
+        position: true, //todo
+      })
+    )
     .mutation(({ ctx, input }) => {
       return ctx.db.insert(places).values({
-        title: input.title,
+        ...input,
+        slug: slugify(input.title, { lower: true, locale: "fr", strict: true }),
         userId: ctx.session.user.id,
       })
     }),

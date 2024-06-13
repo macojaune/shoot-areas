@@ -1,11 +1,11 @@
 "use client"
 import type { Place } from "~/server/db/schemas"
 import { useMemo } from "react"
-import { Card, CardFooter, CardHeader } from "~/app/components/ui/card"
+import { Card, CardFooter, CardHeader } from "~/components/ui/card"
 import { cn } from "~/lib/utils"
 import Image from "next/image"
 import Link from "next/link"
-import { Button } from "~/app/components/ui/button"
+import { Button } from "~/components/ui/button"
 
 export const PlaceCard: React.FC<{
   place: Place
@@ -24,7 +24,7 @@ export const PlaceCard: React.FC<{
 
   return (
     <Card
-      className={cn(size === "sm" && "border-l/support border shadow-none")}
+      className={cn(size === "sm" && "border border-l/support shadow-none")}
     >
       <CardHeader className="relative p-0">
         <Image
@@ -36,7 +36,7 @@ export const PlaceCard: React.FC<{
       </CardHeader>
       <CardFooter
         className={cn(
-          "border-l/support flex flex-row justify-between gap-x-4 lg:px-6",
+          "flex flex-row justify-between gap-x-4 border-l/support lg:px-6",
           size === "sm" && "p-5"
         )}
       >
@@ -45,7 +45,7 @@ export const PlaceCard: React.FC<{
             className={cn(
               size === "hero" && "text-2xl",
               size === "sm" && "text-base",
-              "text-l/support font-bold"
+              "font-bold text-l/support"
             )}
           >
             {place.title}

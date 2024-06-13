@@ -1,10 +1,11 @@
 "use client"
-import { ToggleGroup, ToggleGroupItem } from "~/app/components/ui/toggle-group"
-import { Button } from "~/app/components/ui/button"
-import { PlaceCard } from "~/app/components/place-card"
+import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group"
+import { Button } from "~/components/ui/button"
+import { PlaceCard } from "~/components/place-card"
 import { useState } from "react"
 import { api } from "~/trpc/react"
 import { type Category } from "~/server/db/schemas"
+import { SkeletonCard } from "~/components/ui/skeleton"
 
 const PlaceList: React.FC<{
   categories: Category[]
@@ -57,9 +58,13 @@ const PlaceList: React.FC<{
         )}
       </ToggleGroup>
       <div className="grid grid-cols-3 gap-6">
-        {placesByCategory?.map(({ place }) => (
-          <PlaceCard place={place} key={place.title} />
-        ))}
+        {placesByCategory && placesByCategory?.length > 0
+          ? placesByCategory?.map((place) => (
+              <PlaceCard place={place} key={place.title} />
+            ))
+          : Array(12)
+              .fill({})
+              .map((_, i) => <SkeletonCard key={i} />)}
       </div>
     </div>
   )

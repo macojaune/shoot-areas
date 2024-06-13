@@ -1,14 +1,10 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter"
-import {
-  getServerSession,
-  type DefaultSession,
-  type NextAuthOptions,
-} from "next-auth"
+import { type DefaultSession, type NextAuthOptions } from "next-auth"
 import { type Adapter } from "next-auth/adapters"
 import EmailProvider from "next-auth/providers/email"
 
-import { env } from "~/env"
 import { db } from "~/server/db"
+import { getServerSession } from "next-auth/next"
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -37,6 +33,7 @@ declare module "next-auth" {
  * @see https://next-auth.js.org/configuration/options
  */
 export const authOptions: NextAuthOptions = {
+  debug: process.env.NODE_ENV === "development",
   callbacks: {
     session: ({ session, user }) => ({
       ...session,
@@ -48,7 +45,10 @@ export const authOptions: NextAuthOptions = {
   },
   adapter: DrizzleAdapter(db) as Adapter,
   providers: [
-    EmailProvider({ server: env.EMAIL_SERVER, from: env.EMAIL_FROM }),
+    EmailProvider({
+      server: process.env.EMAIL_SERVER,
+      from: process.env.EMAIL_FROM,
+    }),
 
     /**
      * ...add more providers here.
@@ -60,6 +60,9 @@ export const authOptions: NextAuthOptions = {
      * @see https://next-auth.js.org/providers/github
      */
   ],
+  pages: {
+    signIn: "/connexion",
+  },
 }
 
 /**

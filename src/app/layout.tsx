@@ -4,8 +4,11 @@ import { Poppins } from "next/font/google"
 
 import { TRPCReactProvider } from "~/trpc/react"
 import Link from "next/link"
-import { Button } from "~/app/components/ui/button"
+import { Button } from "~/components/ui/button"
 import { getServerAuthSession } from "~/server/auth"
+import LogoutButton from "~/components/logout-button"
+import Menu from "~/components/header-menu"
+import Footer from "~/components/footer"
 
 const poppins = Poppins({
   weight: ["400", "500", "600", "700", "900"],
@@ -38,7 +41,7 @@ export default async function RootLayout({
               ShootAreas
             </Link>
             <div className="hidden lg:ml-auto lg:flex lg:flex-row">
-              <nav className="lg:py-5"></nav>
+              <Menu session={session} />
               {session ? (
                 <Link href="/nouveau-lieu" passHref>
                   <Button
@@ -61,6 +64,7 @@ export default async function RootLayout({
             </div>
           </div>
           {children}
+          <Footer />
         </TRPCReactProvider>
       </body>
     </html>
