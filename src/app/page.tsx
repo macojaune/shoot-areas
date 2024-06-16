@@ -11,12 +11,10 @@ export default async function Home() {
   //mock
   const randomPlaceP = await api.place.getRandom()
   const recentPlacesP = await api.place.getRecent()
-  const categoriesP = await api.category.all({})
 
-  const [randomPlace, recentPlaces, categories] = await Promise.all([
+  const [randomPlace, recentPlaces] = await Promise.all([
     randomPlaceP,
     recentPlacesP,
-    categoriesP,
   ])
   return (
     <main className="flex min-h-screen flex-col text-l/support">
@@ -41,7 +39,9 @@ export default async function Home() {
         </div>
         <div className="order-1 flex w-full flex-col items-center justify-center border-b border-l/support bg-l/secondary p-8 lg:order-2 lg:w-3/5 lg:px-20 lg:py-16">
           {randomPlace ? (
-            <PlaceCard place={randomPlace} />
+            <Link href={"/" + randomPlace?.slug}>
+              <PlaceCard place={randomPlace} />
+            </Link>
           ) : (
             <SkeletonCard size="hero" />
           )}
@@ -57,7 +57,9 @@ export default async function Home() {
         <div className="grid grid-cols-4 gap-x-6">
           {recentPlaces?.length > 0
             ? recentPlaces.map((rp) => (
-                <PlaceCard size="sm" place={rp} key={rp.id} />
+                <Link href={"/" + rp?.slug} key={rp.id}>
+                  <PlaceCard size="sm" place={rp} />
+                </Link>
               ))
             : Array(4)
                 .fill({})
@@ -74,7 +76,7 @@ export default async function Home() {
             utilisateur·rices !
           </p>
         </div>
-        <PlaceList categories={categories} />
+        <PlaceList />
       </div>
     </main>
   )

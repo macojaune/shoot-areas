@@ -9,7 +9,7 @@ export default async function NewPlacePage({}) {
   return (
     <div className="container flex flex-col gap-5 bg-l/bg">
       <h1>Créer un nouveau lieu</h1>
-      <PlaceForm />
+      <PlaceForm session={session} />
     </div>
   )
 }

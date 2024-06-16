@@ -9,6 +9,7 @@ import {
 import { type AdapterAccount } from "next-auth/adapters"
 import { places } from "~/server/db/schemas/place"
 import { shoots } from "~/server/db/schemas/shoot"
+import { createInsertSchema, createSelectSchema } from "drizzle-zod"
 
 //Auth
 export const users = sqliteTable("user", {
@@ -92,3 +93,6 @@ export const verificationTokens = sqliteTable(
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
   })
 )
+
+export const selectUserSchema = createSelectSchema(users)
+export const insertUserSchema = createInsertSchema(users)

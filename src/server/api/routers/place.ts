@@ -30,6 +30,7 @@ export const placeRouter = createTRPCRouter({
           categories: { with: { category: true } },
           country: true,
           city: true,
+          user: true,
         },
       })
     }),

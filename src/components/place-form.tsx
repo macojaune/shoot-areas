@@ -15,17 +15,24 @@ import {
 } from "~/components/ui/select"
 import { api } from "~/trpc/react"
 import { useRouter } from "next/navigation"
+import { type Session } from "next-auth"
 
-const PlaceForm = () => {
+const PlaceForm = ({ session }: { session: Session | null }) => {
   const placeholderDesc =
     "Écris nous toutes les infos possibles, comment y aller, les détails à savoir et ton retour d'expérience…\n" +
     "(ex: On peut y rentrer en voiture, l'entrée est après la boite " +
     "aux lettres jaune, le voisin est un peu mako, il y a des bœufs " +
     "en liberté, à éviter s'il pleut etc.)"
-
-  //todo fetch countries from db
   const { data: countries, isLoading } = api.country.all.useQuery()
-
+  const { data: hasUsername, isLoading: isLoadingEmail } =
+    api.auth.checkEmail.useQuery(
+      {
+        email: session?.user.email ?? "",
+      },
+      {
+        enabled: session !== null,
+      }
+    )
   const router = useRouter()
   const { mutate, isPending } = api.place.create.useMutation({
     onSuccess: (data) => {
@@ -37,6 +44,12 @@ const PlaceForm = () => {
       console.error("error", error)
     },
   })
+  const { mutate: updateUser, isPending: isPendingUsername } =
+    api.auth.update.useMutation({
+      onError: (error) => {
+        console.error("error saving username", error)
+      },
+    })
   const form = useForm({
     defaultValues: {
       title: "",
@@ -44,13 +57,18 @@ const PlaceForm = () => {
       country: "",
       city: "",
       description: placeholderDesc,
+      username: "",
       accessibility: "3",
       traffic: "3",
       mark: "3",
       isPublic: true,
     },
     onSubmit: ({ value }) => {
-      mutate(value)
+      const { username, ...rest } = value
+      if (username !== "") {
+        updateUser({ name: username, email: session?.user.email })
+      }
+      mutate(rest)
     },
     validatorAdapter: zodValidator,
   })
@@ -322,7 +340,43 @@ const PlaceForm = () => {
           )
         }}
       />
-
+      {hasUsername === false && (
+        <form.Field
+          name="username"
+          validators={{
+            onChange: z.string().trim().min(3, "C'est un peu trop court"),
+          }}
+          children={(field) => (
+            <>
+              <Label htmlFor={field.name} className="flex justify-between">
+                Nom d'utilisateur
+                {field.state.meta.errors?.length > 0 && (
+                  <em
+                    role="alert"
+                    className="text-xs font-medium not-italic text-destructive"
+                  >
+                    {
+                      field.state.meta.errors?.[
+                        field.state.meta.errors.length - 1
+                      ]
+                    }
+                  </em>
+                )}
+              </Label>
+              <Input
+                id={field.name}
+                name={field.name}
+                placeholder="@utilisateur"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                error={field.state.meta.errors.length > 0}
+                required
+              />
+            </>
+          )}
+        />
+      )}
       <div className="flex justify-end">
         <form.Subscribe
           selector={(state) => [state.canSubmit, state.isSubmitting]}

@@ -20,7 +20,6 @@ export const places = sqliteTable(
       .references(() => countries.id)
       .notNull(),
     address: text("address"),
-    zipcode: text("zipcode"),
     cityId: int("city")
       .references(() => cities.id)
       .notNull(),
@@ -108,6 +107,10 @@ export type Place = InferResultType<"places", { country: true; city: true }>
 export type PlaceWithAll = InferResultType<
   "places",
   { user: true; categories: true; country: true; city: true }
+>
+export type PlaceWithCity = InferResultType<
+  "places",
+  { country: true; city: true }
 >
 export const selectPlaceSchema = createSelectSchema(places)
 export const insertPlaceSchema = createInsertSchema(places)

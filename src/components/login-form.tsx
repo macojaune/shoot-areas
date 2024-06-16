@@ -1,8 +1,5 @@
 "use client"
-
 import { signIn } from "next-auth/react"
-import { useState } from "react"
-
 import {
   Card,
   CardContent,
@@ -13,11 +10,23 @@ import {
 import { Button } from "~/components/ui/button"
 import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
+import { useForm } from "@tanstack/react-form"
+import { z } from "zod"
+import { zodValidator } from "@tanstack/zod-form-adapter"
 
 export default function LoginForm() {
-  const [email, setEmail] = useState("")
+  const form = useForm({
+    defaultValues: {
+      email: "",
+      username: "",
+    },
+    onSubmit: async ({ value }) => {
+      await handleEmailSignIn(value.email)
+    },
+    validatorAdapter: zodValidator,
+  })
 
-  const handleEmailSignIn = async () => {
+  const handleEmailSignIn = async (email: string) => {
     const { error } = await signIn("email", {
       email,
       redirect: false,
@@ -40,20 +49,68 @@ export default function LoginForm() {
       </CardHeader>
       <CardContent>
         <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="m@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <Button onClick={handleEmailSignIn} type="submit" className="w-full">
-            Connexion
-          </Button>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              await form.handleSubmit()
+            }}
+          >
+            <div className="grid gap-4">
+              <form.Field
+                name="email"
+                validators={{
+                  onChange: z.string().email("On a besoin d'un email valide"),
+                }}
+                children={(field) => (
+                  <>
+                    <Label
+                      htmlFor={field.name}
+                      className="flex justify-between"
+                    >
+                      E-mail
+                      {field.state.meta.errors?.length > 0 && (
+                        <em
+                          role="alert"
+                          className="text-xs font-medium not-italic text-destructive"
+                        >
+                          {
+                            field.state.meta.errors?.[
+                              field.state.meta.errors.length - 1
+                            ]
+                          }
+                        </em>
+                      )}
+                    </Label>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="email"
+                      placeholder="nom@example.com"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      error={field.state.meta.errors.length > 0}
+                      required
+                    />
+                  </>
+                )}
+              />
+              <form.Subscribe
+                selector={(state) => [state.canSubmit, state.isSubmitting]}
+                children={([canSubmit, isSubmitting]) => (
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={!canSubmit}
+                    className="w-full"
+                  >
+                    {isSubmitting ? "..." : "Connexion"}
+                  </Button>
+                )}
+              />
+            </div>
+          </form>
           <div className="flex flex-row items-center gap-2">
             <div className="mt-1 h-0.5 w-full bg-l/support"></div>
             <p className="text-center text-sm">ou</p>

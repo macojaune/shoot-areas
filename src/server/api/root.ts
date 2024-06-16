@@ -2,6 +2,7 @@ import { placeRouter } from "~/server/api/routers/place"
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc"
 import { categoryRouter } from "~/server/api/routers/category"
 import { countryRouter } from "~/server/api/routers/country"
+import { authRouter } from "~/server/api/routers/auth"
 
 /**
  * This is the primary router for your server.
@@ -9,6 +10,7 @@ import { countryRouter } from "~/server/api/routers/country"
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
+  auth: authRouter,
   place: placeRouter,
   category: categoryRouter,
   country: countryRouter,

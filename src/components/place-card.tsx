@@ -1,5 +1,5 @@
 "use client"
-import { type PlaceWithAll } from "~/server/db/schemas"
+import { type PlaceWithCity } from "~/server/db/schemas"
 import { useMemo } from "react"
 import { Card, CardFooter, CardHeader } from "~/components/ui/card"
 import { cn } from "~/lib/utils"
@@ -8,7 +8,7 @@ import Link from "next/link"
 import { Button } from "~/components/ui/button"
 
 export const PlaceCard: React.FC<{
-  place: PlaceWithAll
+  place: PlaceWithCity
   size?: "sm" | "hero" | "default"
 }> = ({ place, size = "default" }) => {
   const sizes = useMemo(() => {
@@ -21,7 +21,6 @@ export const PlaceCard: React.FC<{
         return { width: 400, height: 400 }
     }
   }, [size])
-
   return (
     <Card
       className={cn(size === "sm" && "border border-l/support shadow-none")}
@@ -30,7 +29,7 @@ export const PlaceCard: React.FC<{
         <Image
           src={`https://picsum.photos/${sizes?.width ?? "400"}/${sizes?.height ?? "400"}`}
           {...sizes}
-          alt={place.title}
+          alt={place?.title}
           className="h-full w-full object-cover"
         />
       </CardHeader>
@@ -48,7 +47,7 @@ export const PlaceCard: React.FC<{
               "font-bold text-l/support"
             )}
           >
-            {place.title}
+            {place?.title}
           </h3>
           <p
             className={cn(
@@ -60,7 +59,7 @@ export const PlaceCard: React.FC<{
             {place?.city?.name}, {place?.country?.name}
           </p>
         </div>
-        <Link href={place.slug} passHref>
+        <Link href={"/" + place?.slug} passHref>
           <Button size={size === "sm" ? "sm" : "lg"}>Voir</Button>
         </Link>
       </CardFooter>

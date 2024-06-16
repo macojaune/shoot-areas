@@ -76,7 +76,17 @@ export default async function PlacePage({
                 </Badge>
               ))}
             </div>
-            <div className="my-4 grid grow grid-cols-2 gap-4 lg:grid-cols-4">
+            <div className="my-5">
+              <h2 className="pb-2 text-3xl font-medium text-l/primary">
+                Tips de l'éclaireur·euse
+              </h2>
+              <div className="mt-4 border-2 border-l/primary p-4">
+                <span className="text-l/primary">{place?.user?.username}</span>
+                <p className="text-lg text-l/support">{place?.description}</p>
+              </div>
+            </div>
+
+            <div className="my-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
               <MarkBlock
                 content={
                   <>
@@ -84,7 +94,7 @@ export default async function PlacePage({
                     <small className="text-2xl">/5</small>
                   </>
                 }
-                header="Nos éclaireur·euses l'ont noté"
+                header={"Nos éclaireur·euses l'ont noté"} // TODO: nb d'avis
               />
               {place?.isPublic ? (
                 <MarkBlock
