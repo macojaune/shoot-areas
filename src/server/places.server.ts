@@ -14,7 +14,7 @@ import {
 import type { CreatePlaceInput, PlaceListItem } from "~/server/places"
 
 async function getUniqueSlug(title: string) {
-  const base = slugify(title) || "lieu"
+  const base = slugify(title) || "spot"
   let candidate = base
   let suffix = 2
 
@@ -88,7 +88,7 @@ export async function getPlaceBySlugHandler(data: { slug: string }) {
 export async function createPlaceHandler(data: CreatePlaceInput) {
   const { isAuthenticated, userId } = await auth()
   if (!isAuthenticated || !userId) {
-    throw new Error("Connexion requise pour ajouter un lieu.")
+    throw new Error("Connexion requise pour ajouter un spot.")
   }
 
   const cleanImages = data.images
@@ -126,7 +126,7 @@ export async function createPlaceHandler(data: CreatePlaceInput) {
     .returning()
 
   const insertedPlace = insertedPlaces[0]
-  if (!insertedPlace) throw new Error("Le lieu n'a pas pu être créé.")
+  if (!insertedPlace) throw new Error("Le spot n'a pas pu être créé.")
 
   if (cleanImages.length > 0) {
     await db.insert(placeImages).values(

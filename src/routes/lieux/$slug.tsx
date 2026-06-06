@@ -21,7 +21,7 @@ function PlacePage() {
     return (
       <main className="mx-auto max-w-3xl px-5 py-16 text-center">
         <h1 className="display-title text-5xl">Spot introuvable</h1>
-        <p className="mt-3 text-muted">Ce lieu n'existe pas ou n'est plus publié.</p>
+        <p className="mt-3 text-muted">Ce spot n'existe pas ou n'est plus publié.</p>
         <Button asChild className="mt-8">
           <Link to="/">Retour à l'accueil</Link>
         </Button>

@@ -96,11 +96,11 @@ export function PlaceMap({ places }: { places: PlaceListItem[] }) {
             <h2 className="section-title text-3xl">Coordonnées à compléter</h2>
             <p className="max-w-2xl leading-7 text-muted">
               {hasPlaces
-                ? "Les premiers lieux existent, mais aucun n'a encore de latitude et longitude exploitables. Ajoute les coordonnées sur les prochains spots pour les faire apparaître ici."
-                : "La carte est prête pour les premiers spots. Ajoute un lieu avec ses coordonnées pour commencer à construire une vraie vue terrain."}
+                ? "Les premiers spots existent, mais aucun n'a encore de latitude et longitude exploitables. Ajoute les coordonnées sur les prochains spots pour les faire apparaître ici."
+                : "La carte est prête pour les premiers spots. Ajoute un spot avec ses coordonnées pour commencer à construire une vraie vue terrain."}
             </p>
             <Button asChild className="w-fit">
-              <Link to="/nouveau-lieu">Ajouter un lieu géolocalisé</Link>
+              <Link to="/nouveau-lieu">Ajouter un spot géolocalisé</Link>
             </Button>
           </Card>
         </div>
@@ -131,10 +131,10 @@ export function PlaceMap({ places }: { places: PlaceListItem[] }) {
             <MapPin className="mr-2 h-4 w-4" aria-hidden="true" />
             Carte des spots
           </Badge>
-          <h2 className="section-title text-4xl">Voir les lieux d'un coup</h2>
+          <h2 className="section-title text-4xl">Voir les spots d'un coup</h2>
           <p className="max-w-3xl leading-7 text-muted">
             Une vue rapide des spots déjà géolocalisés, utile pour repérer les
-            distances, grouper une sortie et ouvrir directement la fiche du lieu.
+            distances, grouper une sortie et ouvrir directement la fiche du spot.
           </p>
           <Card className="relative aspect-[4/3] overflow-hidden bg-lagoon/10 sm:aspect-[16/9]">
             <div
@@ -205,7 +205,7 @@ export function PlaceMap({ places }: { places: PlaceListItem[] }) {
           ))}
           {mappedPlaces.length > 6 ? (
             <p className="text-sm font-semibold text-muted">
-              + {mappedPlaces.length - 6} autres lieux visibles sur la carte.
+              + {mappedPlaces.length - 6} autres spots visibles sur la carte.
             </p>
           ) : null}
           <Button asChild variant="outline" className="mt-1 w-full">

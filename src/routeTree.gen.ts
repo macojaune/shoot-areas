@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as NouveauLieuRouteImport } from './routes/nouveau-lieu'
+import { Route as MentionsLegalesRouteImport } from './routes/mentions-legales'
+import { Route as AProposRouteImport } from './routes/a-propos'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
@@ -18,6 +20,16 @@ import { Route as LieuxSlugRouteImport } from './routes/lieux/$slug'
 const NouveauLieuRoute = NouveauLieuRouteImport.update({
   id: '/nouveau-lieu',
   path: '/nouveau-lieu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MentionsLegalesRoute = MentionsLegalesRouteImport.update({
+  id: '/mentions-legales',
+  path: '/mentions-legales',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AProposRoute = AProposRouteImport.update({
+  id: '/a-propos',
+  path: '/a-propos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -43,6 +55,8 @@ const LieuxSlugRoute = LieuxSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/a-propos': typeof AProposRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
   '/nouveau-lieu': typeof NouveauLieuRoute
   '/lieux/$slug': typeof LieuxSlugRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -50,6 +64,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/a-propos': typeof AProposRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
   '/nouveau-lieu': typeof NouveauLieuRoute
   '/lieux/$slug': typeof LieuxSlugRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -58,6 +74,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/a-propos': typeof AProposRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
   '/nouveau-lieu': typeof NouveauLieuRoute
   '/lieux/$slug': typeof LieuxSlugRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -67,15 +85,26 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/a-propos'
+    | '/mentions-legales'
     | '/nouveau-lieu'
     | '/lieux/$slug'
     | '/sign-in/$'
     | '/sign-up/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/nouveau-lieu' | '/lieux/$slug' | '/sign-in/$' | '/sign-up/$'
+  to:
+    | '/'
+    | '/a-propos'
+    | '/mentions-legales'
+    | '/nouveau-lieu'
+    | '/lieux/$slug'
+    | '/sign-in/$'
+    | '/sign-up/$'
   id:
     | '__root__'
     | '/'
+    | '/a-propos'
+    | '/mentions-legales'
     | '/nouveau-lieu'
     | '/lieux/$slug'
     | '/sign-in/$'
@@ -84,6 +113,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AProposRoute: typeof AProposRoute
+  MentionsLegalesRoute: typeof MentionsLegalesRoute
   NouveauLieuRoute: typeof NouveauLieuRoute
   LieuxSlugRoute: typeof LieuxSlugRoute
   SignInSplatRoute: typeof SignInSplatRoute
@@ -97,6 +128,20 @@ declare module '@tanstack/react-router' {
       path: '/nouveau-lieu'
       fullPath: '/nouveau-lieu'
       preLoaderRoute: typeof NouveauLieuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mentions-legales': {
+      id: '/mentions-legales'
+      path: '/mentions-legales'
+      fullPath: '/mentions-legales'
+      preLoaderRoute: typeof MentionsLegalesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/a-propos': {
+      id: '/a-propos'
+      path: '/a-propos'
+      fullPath: '/a-propos'
+      preLoaderRoute: typeof AProposRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -132,6 +177,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AProposRoute: AProposRoute,
+  MentionsLegalesRoute: MentionsLegalesRoute,
   NouveauLieuRoute: NouveauLieuRoute,
   LieuxSlugRoute: LieuxSlugRoute,
   SignInSplatRoute: SignInSplatRoute,

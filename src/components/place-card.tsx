@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router"
 import { Camera, MapPin } from "lucide-react"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
@@ -40,7 +41,9 @@ export function PlaceCard({ place }: { place: PlaceListItem }) {
           </p>
         </div>
         <Button asChild variant="outline" className="mt-auto w-full">
-          <a href={`/lieux/${place.slug}`}>Voir le spot</a>
+          <Link to="/lieux/$slug" params={{ slug: place.slug }}>
+            Voir le spot
+          </Link>
         </Button>
       </div>
     </Card>

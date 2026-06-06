@@ -2,7 +2,6 @@
 import {
   ClerkProvider,
   Show,
-  SignInButton,
   UserButton,
 } from "@clerk/tanstack-react-start"
 import {
@@ -26,7 +25,7 @@ export const Route = createRootRoute({
       },
       {
         name: "description",
-        content: "Trouve le lieu de ton prochain shooting photo ou vidéo.",
+        content: "Trouve le spot de ton prochain shooting photo ou vidéo.",
       },
     ],
     links: [
@@ -40,7 +39,7 @@ export const Route = createRootRoute({
   notFoundComponent: () => (
     <RootDocument>
       <main className="mx-auto max-w-3xl px-5 py-20 text-center">
-        <h1 className="display-title text-5xl">Lieu introuvable</h1>
+        <h1 className="display-title text-5xl">Spot introuvable</h1>
         <p className="mt-4 text-muted">Cette page n'existe pas encore.</p>
         <Button asChild className="mt-8">
           <Link to="/">Retour à l'accueil</Link>
@@ -75,21 +74,41 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   Shootareas
                 </Link>
                 <nav className="flex items-center gap-2">
-                  <Button asChild variant="ghost" className="hidden sm:inline-flex">
-                    <Link to="/">Explorer</Link>
+                  <Button asChild variant="secondary">
+                    <Link to="/nouveau-lieu">Ajouter un spot</Link>
                   </Button>
-                  <AuthNav clerkConfigured={clerkConfigured} />
+                  <AccountMenu clerkConfigured={clerkConfigured} />
                 </nav>
               </div>
             </header>
             {children}
             <footer className="border-t border-line bg-ink px-5 py-8 text-paper">
-              <div className="mx-auto flex max-w-7xl flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <p className="brand-mark text-3xl">Shootareas</p>
-                <p className="max-w-xl text-sm text-paper/70">
-                  Spots photo, vidéo et contenus créatifs, avec les infos terrain
-                  qu'on aimerait toujours avoir avant d'y aller.
+              <div className="mx-auto max-w-7xl">
+                <p className="mb-7 text-center text-sm text-paper/80">
+                  Projet cadré sans trépied par{" "}
+                  <a
+                    href="https://marvinl.com"
+                    className="font-semibold underline decoration-sun underline-offset-4 hover:text-sun"
+                  >
+                    MarvinL.com
+                  </a>
+                  .
                 </p>
+                <div className="grid gap-6 md:grid-cols-3 md:items-center">
+                  <nav className="order-2 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm font-semibold md:order-1 md:justify-start">
+                    <Link to="/">Accueil</Link>
+                    <Link to="/nouveau-lieu">Ajouter un spot</Link>
+                    <Link to="/a-propos">À propos</Link>
+                    <Link to="/mentions-legales">Mentions légales</Link>
+                  </nav>
+                  <p className="brand-mark order-1 text-center text-3xl md:order-2 md:text-4xl">
+                    Shootareas <span className="font-sans text-base">© 2026</span>
+                  </p>
+                  <p className="order-3 text-center text-sm leading-6 text-paper/70 md:text-right">
+                    Le carnet communautaire pour trouver, partager et préparer les
+                    spots qui font déjà le cadre.
+                  </p>
+                </div>
               </div>
             </footer>
           </div>
@@ -111,30 +130,12 @@ function MaybeClerkProvider({
   return <ClerkProvider>{children}</ClerkProvider>
 }
 
-function AuthNav({ clerkConfigured }: { clerkConfigured: boolean }) {
-  if (!clerkConfigured) {
-    return (
-      <Button asChild variant="secondary">
-        <a href="/sign-in">Connexion</a>
-      </Button>
-    )
-  }
+function AccountMenu({ clerkConfigured }: { clerkConfigured: boolean }) {
+  if (!clerkConfigured) return null
 
   return (
-    <>
-      <Show when="signed-in">
-        <Button asChild variant="secondary">
-          <Link to="/nouveau-lieu">Ajouter</Link>
-        </Button>
-        <UserButton />
-      </Show>
-      <Show when="signed-out">
-        <SignInButton mode="modal">
-          <Button type="button" variant="secondary">
-            Connexion
-          </Button>
-        </SignInButton>
-      </Show>
-    </>
+    <Show when="signed-in">
+      <UserButton />
+    </Show>
   )
 }

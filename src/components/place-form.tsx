@@ -75,7 +75,7 @@ export function PlaceForm({ categories }: { categories: Category[] }) {
         setSubmitError(
           error instanceof Error
             ? error.message
-            : "Le lieu n'a pas pu être créé."
+            : "Le spot n'a pas pu être créé."
         )
       }
     },
@@ -116,7 +116,7 @@ export function PlaceForm({ categories }: { categories: Category[] }) {
         >
           {(field) => (
             <div className="grid gap-2">
-              <Label htmlFor={field.name}>Nom du lieu</Label>
+              <Label htmlFor={field.name}>Nom du spot</Label>
               <Input
                 id={field.name}
                 name={field.name}
@@ -313,7 +313,7 @@ export function PlaceForm({ categories }: { categories: Category[] }) {
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.checked)}
               />
-              Lieu public ou librement accessible
+              Spot public ou librement accessible
             </label>
           )}
         </form.Field>
@@ -441,7 +441,7 @@ export function PlaceForm({ categories }: { categories: Category[] }) {
             disabled={!state.canSubmit || state.isSubmitting}
             className="w-full md:w-auto md:justify-self-end"
           >
-            {state.isSubmitting ? "Publication..." : "Publier le lieu"}
+            {state.isSubmitting ? "Publication..." : "Publier le spot"}
           </Button>
         )}
       </form.Subscribe>
