@@ -29,7 +29,12 @@ export const Route = createRootRoute({
         content: "Trouve le lieu de ton prochain shooting photo ou vidéo.",
       },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      { rel: "shortcut icon", href: "/favicon.ico" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+    ],
   }),
   component: RootComponent,
   notFoundComponent: () => (
