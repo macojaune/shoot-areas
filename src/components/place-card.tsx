@@ -1,69 +1,48 @@
-"use client"
-import type { Place } from "~/server/db/schemas"
-import { useMemo } from "react"
-import { Card, CardFooter, CardHeader } from "~/components/ui/card"
-import { cn } from "~/lib/utils"
-import Image from "next/image"
-import Link from "next/link"
+import { Camera, MapPin } from "lucide-react"
+import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
+import { Card } from "~/components/ui/card"
+import type { PlaceListItem } from "~/server/places"
 
-export const PlaceCard: React.FC<{
-  place: Place
-  size?: "sm" | "hero" | "default"
-}> = ({ place, size = "default" }) => {
-  const sizes = useMemo(() => {
-    switch (size) {
-      case "sm":
-        return { width: 294, height: 126 }
-      case "hero":
-        return { width: 424, height: 424 }
-      default:
-        return { width: 400, height: 400 }
-    }
-  }, [size])
+export function PlaceCard({ place }: { place: PlaceListItem }) {
+  const image = place.images[0]
 
   return (
-    <Card
-      className={cn(size === "sm" && "border border-l/support shadow-none")}
-    >
-      <CardHeader className="relative p-0">
-        <Image
-          src={`https://picsum.photos/${sizes?.width ?? "400"}/${sizes?.height ?? "400"}`}
-          {...sizes}
-          alt={place.title}
-          className="h-full w-full object-cover"
-        />
-      </CardHeader>
-      <CardFooter
-        className={cn(
-          "flex flex-row justify-between gap-x-4 border-l/support lg:px-6",
-          size === "sm" && "p-5"
+    <Card className="flex h-full flex-col overflow-hidden">
+      <div className="relative aspect-[4/3] border-b border-line bg-lagoon/20">
+        {image ? (
+          <img
+            src={image.externalUrl}
+            alt={image.caption || place.title}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center bg-paper">
+            <Camera className="h-12 w-12 text-muted" aria-hidden="true" />
+          </div>
         )}
-      >
-        <div className="flex flex-col justify-between">
-          <h3
-            className={cn(
-              size === "hero" && "text-2xl",
-              size === "sm" && "text-base",
-              "font-bold text-l/support"
-            )}
-          >
-            {place.title}
-          </h3>
-          <p
-            className={cn(
-              "font-mono",
-              size === "hero" && "text-base",
-              size === "sm" && "text-xs"
-            )}
-          >
+      </div>
+      <div className="flex grow flex-col gap-4 p-5">
+        <div className="flex flex-wrap gap-2">
+          {place.categories.slice(0, 3).map((category) => (
+            <Badge key={category.slug}>{category.title}</Badge>
+          ))}
+        </div>
+        <div className="space-y-2">
+          <h3 className="section-title text-2xl">{place.title}</h3>
+          <p className="flex items-center gap-2 text-sm font-semibold text-muted">
+            <MapPin className="h-4 w-4" aria-hidden="true" />
             {place.city}, {place.country}
           </p>
+          <p className="line-clamp-3 text-sm leading-6 text-muted">
+            {place.description}
+          </p>
         </div>
-        <Link href={place.slug} passHref>
-          <Button size={size === "sm" ? "sm" : "lg"}>Voir</Button>
-        </Link>
-      </CardFooter>
+        <Button asChild variant="outline" className="mt-auto w-full">
+          <a href={`/lieux/${place.slug}`}>Voir le spot</a>
+        </Button>
+      </div>
     </Card>
   )
 }

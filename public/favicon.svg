@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Shootareas">
+  <rect width="64" height="64" fill="#f8c537"/>
+  <path
+    fill="#171717"
+    d="M32 7c11.6 0 21 9.1 21 20.4 0 15.7-21 29.6-21 29.6S11 43.1 11 27.4C11 16.1 20.4 7 32 7Z"
+  />
+  <circle cx="32" cy="27" r="12" fill="#fffaf2"/>
+  <circle cx="32" cy="27" r="5.4" fill="#171717"/>
+  <circle cx="45" cy="14" r="5" fill="#2bb3a3"/>
+  <path fill="#d95d39" d="M14 49h36v8H14z"/>
+</svg>
