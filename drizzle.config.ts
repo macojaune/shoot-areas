@@ -1,14 +1,11 @@
-import { type Config } from "drizzle-kit"
+import { defineConfig } from "drizzle-kit"
 
-import { env } from "~/env"
-
-export default {
-  schema: "./src/server/db/schemas/*.ts",
-  driver: "turso",
-  dialect: "sqlite",
-  dbCredentials: {
-    url: env.DATABASE_URL,
-    authToken: env.TURSO_TOKEN,
-  },
+export default defineConfig({
+  schema: "./src/server/db/schema.ts",
   out: "./drizzle",
-} satisfies Config
+  dialect: "turso",
+  dbCredentials: {
+    url: process.env.DATABASE_URL ?? "file:shootareas.db",
+    authToken: process.env.TURSO_AUTH_TOKEN ?? process.env.TURSO_TOKEN,
+  },
+})

@@ -1,394 +1,450 @@
-"use client"
 import { useForm } from "@tanstack/react-form"
-import { zodValidator } from "@tanstack/zod-form-adapter"
-import { z } from "zod"
+import { useRouter } from "@tanstack/react-router"
+import { useServerFn } from "@tanstack/react-start"
+import { Plus, Trash2 } from "lucide-react"
+import * as React from "react"
 import { Button } from "~/components/ui/button"
-import { Label } from "~/components/ui/label"
+import { Card } from "~/components/ui/card"
 import { Input } from "~/components/ui/input"
+import { Label } from "~/components/ui/label"
 import { Textarea } from "~/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select"
-import { api } from "~/trpc/react"
-import { useRouter } from "next/navigation"
-import { type Session } from "next-auth"
+import { createPlace, type CreatePlaceInput } from "~/server/places"
+import type { Category } from "~/server/db/schema"
 
-const PlaceForm = ({ session }: { session: Session | null }) => {
-  const placeholderDesc =
-    "Écris nous toutes les infos possibles, comment y aller, les détails à savoir et ton retour d'expérience…\n" +
-    "(ex: On peut y rentrer en voiture, l'entrée est après la boite " +
-    "aux lettres jaune, le voisin est un peu mako, il y a des bœufs " +
-    "en liberté, à éviter s'il pleut etc.)"
-  const { data: countries, isLoading } = api.country.all.useQuery()
-  const { data: hasUsername, isLoading: isLoadingEmail } =
-    api.auth.checkEmail.useQuery(
-      {
-        email: session?.user.email ?? "",
-      },
-      {
-        enabled: session !== null,
-      }
-    )
-  const router = useRouter()
-  const { mutate, isPending } = api.place.create.useMutation({
-    onSuccess: (data) => {
-      console.log("success", data)
-      //todo redirect to place page
-      // router.push("/")
-    },
-    onError: (error) => {
-      console.error("error", error)
-    },
-  })
-  const { mutate: updateUser, isPending: isPendingUsername } =
-    api.auth.update.useMutation({
-      onError: (error) => {
-        console.error("error saving username", error)
-      },
-    })
-  const form = useForm({
-    defaultValues: {
-      title: "",
-      address: "",
-      country: "",
-      city: "",
-      description: placeholderDesc,
-      username: "",
-      accessibility: "3",
-      traffic: "3",
-      mark: "3",
-      isPublic: true,
-    },
-    onSubmit: ({ value }) => {
-      const { username, ...rest } = value
-      if (username !== "") {
-        updateUser({ name: username, email: session?.user.email })
-      }
-      mutate(rest)
-    },
-    validatorAdapter: zodValidator,
-  })
+type ImageDraft = {
+  externalUrl: string
+  creditName: string
+  creditUrl: string
+  caption: string
+}
+
+const emptyImage: ImageDraft = {
+  externalUrl: "",
+  creditName: "",
+  creditUrl: "",
+  caption: "",
+}
+
+function FieldError({ errors }: { errors: unknown[] }) {
+  if (errors.length === 0) return null
   return (
-    <form
-      onSubmit={async (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        await form.handleSubmit()
-      }}
-      className="my-8 space-y-3 lg:mx-auto lg:w-2/3"
-    >
-      <form.Field
-        name="title"
-        validators={{
-          onBlur({ value }) {
-            if (value === "") return "Le nom du lieu est plutôt essentiel"
-          },
-          onChange: z
-            .string()
-            .trim()
-            .min(5, "Il faudra faire un peu plus" + " long"),
-        }}
-        children={(field) => {
-          return (
-            <div className="flex flex-col gap-y-2 transition-all duration-200 ease-in">
-              <Label htmlFor={field.name} className="flex justify-between">
-                Nom du lieu
-                {field.state.meta.errors?.length > 0 && (
-                  <em
-                    role="alert"
-                    className="text-xs font-medium not-italic text-destructive"
-                  >
-                    {
-                      field.state.meta.errors?.[
-                        field.state.meta.errors.length - 1
-                      ]
-                    }
-                  </em>
-                )}
-              </Label>
-              <Input
-                type="text"
-                name={field.name}
-                id={field.name}
-                placeholder={"Sous le pont de l'alliance"}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                error={field.state.meta.errors.length > 0}
-                required
-              />
-            </div>
-          )
-        }}
-      />
-      <form.Field
-        name="address"
-        validators={{
-          onBlur({ value }) {
-            if (value === "") return ""
-          },
-          onChange: z
-            .string()
-            .trim()
-            .min(5, "Il faudra faire un peu plus" + " long"),
-        }}
-        children={(field) => {
-          return (
-            <div className="flex flex-col gap-y-2 transition-all duration-200 ease-in">
-              <Label htmlFor={field.name} className="flex justify-between">
-                Adresse
-                {field.state.meta.errors?.length > 0 && (
-                  <em
-                    role="alert"
-                    className="text-xs font-medium not-italic text-destructive"
-                  >
-                    {
-                      field.state.meta.errors?.[
-                        field.state.meta.errors.length - 1
-                      ]
-                    }
-                  </em>
-                )}
-              </Label>
-              <Input
-                type="text"
-                name={field.name}
-                id={field.name}
-                placeholder={"12 Rue du pape"}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                error={field.state.meta.errors.length > 0}
-                required
-              />
-            </div>
-          )
-        }}
-      />
-      <div className="grid grid-cols-3 gap-x-3">
-        <form.Field
-          name="country"
-          validators={{
-            onBlur({ value }) {
-              if (value === "") return "Ce serait bien qu'on puisse y aller"
-            },
-          }}
-          children={(field) => {
-            return (
-              <div className="flex flex-col gap-y-2 transition-all duration-200 ease-in">
-                <Label
-                  htmlFor={field.name}
-                  className="flex flex-wrap justify-between gap-y-2"
-                >
-                  Pays
-                  {field.state.meta.errors?.length > 0 && (
-                    <em
-                      role="alert"
-                      className="text-xs font-medium not-italic text-destructive"
-                    >
-                      {
-                        field.state.meta.errors?.[
-                          field.state.meta.errors.length - 1
-                        ]
-                      }
-                    </em>
-                  )}
-                </Label>
-                <Select
-                  name={field.name}
-                  defaultValue={field.state.value}
-                  onValueChange={(val) => field.handleChange(val)}
-                  onOpenChange={(isOpen) => !isOpen && field.handleBlur()}
-                  required
-                >
-                  <SelectTrigger error={field.state.meta.errors.length > 0}>
-                    <SelectValue placeholder="Choisis un Pays" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {countries?.map((country) => (
-                      <SelectItem
-                        value={country.id.toString()}
-                        key={country.id}
-                      >
-                        {country.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )
-          }}
-        />
-        <form.Field
-          name="city"
-          validators={{
-            onChangeListenTo: ["country"],
-            onChange({ value, fieldApi }) {
-              if (value === "") return "Mieux vaut être précis"
-              if (
-                !countries
-                  .find(
-                    (c) =>
-                      c.id === parseInt(fieldApi.form.getFieldValue("country"))
-                  )
-                  ?.cities.find((ci) => ci.id === parseInt(value))
-              )
-                return "Pense à choisir une ville"
-            },
-            onBlur({ value }) {
-              if (value === "") return "Mieux vaut être précis"
-            },
-          }}
-          children={(field) => {
-            return (
-              <div className="flex flex-col gap-y-2 transition-all duration-200 ease-in">
-                <Label
-                  htmlFor={field.name}
-                  className="flex flex-wrap justify-between gap-y-2"
-                >
-                  Ville
-                  {field.state.meta.errors?.length > 0 && (
-                    <em
-                      role="alert"
-                      className="text-xs font-medium not-italic text-destructive"
-                    >
-                      {
-                        field.state.meta.errors?.[
-                          field.state.meta.errors.length - 1
-                        ]
-                      }
-                    </em>
-                  )}
-                </Label>
-                <Select
-                  name={field.name}
-                  defaultValue={field.state.value}
-                  onValueChange={(val) => field.handleChange(val)}
-                  onOpenChange={(isOpen) => !isOpen && field.handleBlur()}
-                  required
-                >
-                  <SelectTrigger error={field.state.meta.errors.length > 0}>
-                    <SelectValue placeholder="Choisis une ville" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {countries
-                      ?.find(
-                        (c) =>
-                          c.id === parseInt(field.form.getFieldValue("country"))
-                      )
-                      ?.cities.map((city) => (
-                        <SelectItem value={city.id.toString()} key={city.id}>
-                          {city.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )
-          }}
-        />
-      </div>
-      <form.Field
-        name="description"
-        validators={{
-          onBlur({ value }) {
-            if (value === "") return "C'est cette partie qui fait tout le site"
-            if (value === placeholderDesc) return "Un petit effort…"
-          },
-          onChange: z
-            .string()
-            .trim()
-            .min(45, "Il faudra faire un peu plus" + " long"),
-        }}
-        children={(field) => {
-          return (
-            <div className="flex flex-col gap-y-2 transition-all duration-200 ease-in">
-              <Label htmlFor={field.name} className="flex justify-between">
-                Details
-                {field.state.meta.errors?.length > 0 && (
-                  <em
-                    role="alert"
-                    className="text-xs font-medium not-italic text-destructive"
-                  >
-                    {
-                      field.state.meta.errors?.[
-                        field.state.meta.errors.length - 1
-                      ]
-                    }
-                  </em>
-                )}
-              </Label>
-              <Textarea
-                name={field.name}
-                id={field.name}
-                value={field.state.value}
-                onClick={function (_e) {
-                  if (field.state.value === placeholderDesc) {
-                    field.setValue("")
-                  }
-                }}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                error={field.state.meta.errors.length > 0}
-                required
-              />
-            </div>
-          )
-        }}
-      />
-      {hasUsername === false && (
-        <form.Field
-          name="username"
-          validators={{
-            onChange: z.string().trim().min(3, "C'est un peu trop court"),
-          }}
-          children={(field) => (
-            <>
-              <Label htmlFor={field.name} className="flex justify-between">
-                Nom d'utilisateur
-                {field.state.meta.errors?.length > 0 && (
-                  <em
-                    role="alert"
-                    className="text-xs font-medium not-italic text-destructive"
-                  >
-                    {
-                      field.state.meta.errors?.[
-                        field.state.meta.errors.length - 1
-                      ]
-                    }
-                  </em>
-                )}
-              </Label>
-              <Input
-                id={field.name}
-                name={field.name}
-                placeholder="@utilisateur"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                error={field.state.meta.errors.length > 0}
-                required
-              />
-            </>
-          )}
-        />
-      )}
-      <div className="flex justify-end">
-        <form.Subscribe
-          selector={(state) => [state.canSubmit, state.isSubmitting]}
-          children={([canSubmit, isSubmitting]) => (
-            <Button type="submit" size="lg" disabled={!canSubmit}>
-              {isSubmitting || isPending ? "..." : "Valider"}
-            </Button>
-          )}
-        />
-      </div>
-    </form>
+    <p className="text-sm font-semibold text-clay">
+      {errors.map((error) => String(error)).join(", ")}
+    </p>
   )
 }
 
-export default PlaceForm
+export function PlaceForm({ categories }: { categories: Category[] }) {
+  const router = useRouter()
+  const submitPlace = useServerFn(createPlace)
+  const [selectedCategories, setSelectedCategories] = React.useState<string[]>([])
+  const [images, setImages] = React.useState<ImageDraft[]>([{ ...emptyImage }])
+  const [submitError, setSubmitError] = React.useState<string | null>(null)
+
+  const form = useForm({
+    defaultValues: {
+      title: "",
+      description: "",
+      country: "Guadeloupe",
+      city: "",
+      address: "",
+      latitude: "",
+      longitude: "",
+      accessNotes: "",
+      bestLight: "",
+      bestPeriod: "",
+      accessibilityLevel: 3,
+      crowdLevel: 3,
+      isPublicPlace: true,
+    },
+    onSubmit: async ({ value }) => {
+      setSubmitError(null)
+
+      const payload: CreatePlaceInput = {
+        ...value,
+        latitude: value.latitude === "" ? null : Number(value.latitude),
+        longitude: value.longitude === "" ? null : Number(value.longitude),
+        categorySlugs: selectedCategories,
+        images,
+      }
+
+      try {
+        const place = await submitPlace({ data: payload })
+        await router.navigate({ to: "/lieux/$slug", params: { slug: place.slug } })
+      } catch (error) {
+        setSubmitError(
+          error instanceof Error
+            ? error.message
+            : "Le lieu n'a pas pu être créé."
+        )
+      }
+    },
+  })
+
+  function toggleCategory(slug: string) {
+    setSelectedCategories((current) =>
+      current.includes(slug)
+        ? current.filter((item) => item !== slug)
+        : [...current, slug]
+    )
+  }
+
+  function updateImage(index: number, field: keyof ImageDraft, value: string) {
+    setImages((current) =>
+      current.map((image, imageIndex) =>
+        imageIndex === index ? { ...image, [field]: value } : image
+      )
+    )
+  }
+
+  return (
+    <form
+      className="grid gap-6"
+      onSubmit={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        void form.handleSubmit()
+      }}
+    >
+      <Card className="grid gap-5 p-5">
+        <form.Field
+          name="title"
+          validators={{
+            onChange: ({ value }) =>
+              value.trim().length >= 3 ? undefined : "Nom trop court",
+          }}
+        >
+          {(field) => (
+            <div className="grid gap-2">
+              <Label htmlFor={field.name}>Nom du lieu</Label>
+              <Input
+                id={field.name}
+                name={field.name}
+                value={field.state.value}
+                placeholder="Sous le pont de l'Alliance"
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+              <FieldError errors={field.state.meta.errors} />
+            </div>
+          )}
+        </form.Field>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          <form.Field name="country">
+            {(field) => (
+              <div className="grid gap-2">
+                <Label htmlFor={field.name}>Pays / territoire</Label>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                />
+              </div>
+            )}
+          </form.Field>
+          <form.Field
+            name="city"
+            validators={{
+              onChange: ({ value }) =>
+                value.trim().length >= 2 ? undefined : "Ville requise",
+            }}
+          >
+            {(field) => (
+              <div className="grid gap-2">
+                <Label htmlFor={field.name}>Ville / commune</Label>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  value={field.state.value}
+                  placeholder="Les Abymes"
+                  onBlur={field.handleBlur}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                />
+                <FieldError errors={field.state.meta.errors} />
+              </div>
+            )}
+          </form.Field>
+        </div>
+
+        <form.Field name="address">
+          {(field) => (
+            <div className="grid gap-2">
+              <Label htmlFor={field.name}>Adresse ou repère</Label>
+              <Input
+                id={field.name}
+                name={field.name}
+                value={field.state.value}
+                placeholder="Entrée après la boîte aux lettres jaune"
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            </div>
+          )}
+        </form.Field>
+
+        <form.Field
+          name="description"
+          validators={{
+            onChange: ({ value }) =>
+              value.trim().length >= 40
+                ? undefined
+                : "Ajoute au moins quelques détails utiles",
+          }}
+        >
+          {(field) => (
+            <div className="grid gap-2">
+              <Label htmlFor={field.name}>Ce qu'on peut y faire</Label>
+              <Textarea
+                id={field.name}
+                name={field.name}
+                value={field.state.value}
+                placeholder="Décris le rendu possible, l'ambiance, les précautions, les horaires à viser, les choses à éviter..."
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+              <FieldError errors={field.state.meta.errors} />
+            </div>
+          )}
+        </form.Field>
+      </Card>
+
+      <Card className="grid gap-5 p-5">
+        <h2 className="text-2xl font-black">Préparer le shoot</h2>
+        <div className="grid gap-5 md:grid-cols-2">
+          <form.Field name="accessNotes">
+            {(field) => (
+              <div className="grid gap-2">
+                <Label htmlFor={field.name}>Accès et détails terrain</Label>
+                <Textarea
+                  id={field.name}
+                  name={field.name}
+                  value={field.state.value}
+                  placeholder="Parking, marche, escaliers, fauteuil roulant, animaux, pluie..."
+                  onBlur={field.handleBlur}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                />
+              </div>
+            )}
+          </form.Field>
+          <div className="grid gap-4">
+            <form.Field name="bestLight">
+              {(field) => (
+                <div className="grid gap-2">
+                  <Label htmlFor={field.name}>Meilleure lumière</Label>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    placeholder="Golden hour, matin, temps couvert..."
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                  />
+                </div>
+              )}
+            </form.Field>
+            <form.Field name="bestPeriod">
+              {(field) => (
+                <div className="grid gap-2">
+                  <Label htmlFor={field.name}>Meilleure période</Label>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    placeholder="Saison sèche, semaine, hors vacances..."
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                  />
+                </div>
+              )}
+            </form.Field>
+          </div>
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          <form.Field name="accessibilityLevel">
+            {(field) => (
+              <div className="grid gap-2">
+                <Label htmlFor={field.name}>Accessibilité : {field.state.value}/5</Label>
+                <input
+                  id={field.name}
+                  name={field.name}
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(event) =>
+                    field.handleChange(Number(event.target.value))
+                  }
+                />
+              </div>
+            )}
+          </form.Field>
+          <form.Field name="crowdLevel">
+            {(field) => (
+              <div className="grid gap-2">
+                <Label htmlFor={field.name}>Affluence : {field.state.value}/5</Label>
+                <input
+                  id={field.name}
+                  name={field.name}
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(event) =>
+                    field.handleChange(Number(event.target.value))
+                  }
+                />
+              </div>
+            )}
+          </form.Field>
+        </div>
+
+        <form.Field name="isPublicPlace">
+          {(field) => (
+            <label className="flex items-center gap-3 font-semibold">
+              <input
+                type="checkbox"
+                checked={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.checked)}
+              />
+              Lieu public ou librement accessible
+            </label>
+          )}
+        </form.Field>
+      </Card>
+
+      <Card className="grid gap-5 p-5">
+        <h2 className="text-2xl font-black">Catégories</h2>
+        <div className="flex flex-wrap gap-2">
+          {categories.map((category) => {
+            const selected = selectedCategories.includes(category.slug)
+            return (
+              <button
+                key={category.slug}
+                type="button"
+                className={
+                  selected
+                    ? "border border-line bg-ink px-3 py-2 font-semibold text-paper"
+                    : "border border-line bg-surface px-3 py-2 font-semibold"
+                }
+                onClick={() => toggleCategory(category.slug)}
+              >
+                {category.title}
+              </button>
+            )
+          })}
+        </div>
+      </Card>
+
+      <Card className="grid gap-5 p-5">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-2xl font-black">Images et crédits</h2>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setImages((current) => [...current, { ...emptyImage }])}
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            Image
+          </Button>
+        </div>
+        {images.map((image, index) => (
+          <div
+            key={index}
+            className="grid gap-3 border border-line bg-paper p-4 md:grid-cols-2"
+          >
+            <div className="grid gap-2 md:col-span-2">
+              <Label htmlFor={`image-${index}`}>URL image</Label>
+              <Input
+                id={`image-${index}`}
+                value={image.externalUrl}
+                placeholder="https://..."
+                onChange={(event) =>
+                  updateImage(index, "externalUrl", event.target.value)
+                }
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor={`credit-${index}`}>Crédit</Label>
+              <Input
+                id={`credit-${index}`}
+                value={image.creditName}
+                placeholder="@photographe"
+                onChange={(event) =>
+                  updateImage(index, "creditName", event.target.value)
+                }
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor={`credit-url-${index}`}>Lien crédit</Label>
+              <Input
+                id={`credit-url-${index}`}
+                value={image.creditUrl}
+                placeholder="https://instagram.com/..."
+                onChange={(event) =>
+                  updateImage(index, "creditUrl", event.target.value)
+                }
+              />
+            </div>
+            <div className="grid gap-2 md:col-span-2">
+              <Label htmlFor={`caption-${index}`}>Légende</Label>
+              <Input
+                id={`caption-${index}`}
+                value={image.caption}
+                placeholder="Exemple de rendu au coucher du soleil"
+                onChange={(event) =>
+                  updateImage(index, "caption", event.target.value)
+                }
+              />
+            </div>
+            {images.length > 1 ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="justify-self-start"
+                onClick={() =>
+                  setImages((current) =>
+                    current.filter((_, imageIndex) => imageIndex !== index)
+                  )
+                }
+              >
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                Retirer
+              </Button>
+            ) : null}
+          </div>
+        ))}
+      </Card>
+
+      {submitError ? (
+        <p className="border border-clay bg-clay/10 p-4 font-semibold text-clay">
+          {submitError}
+        </p>
+      ) : null}
+
+      <form.Subscribe
+        selector={(state) => ({
+          canSubmit: state.canSubmit,
+          isSubmitting: state.isSubmitting,
+        })}
+      >
+        {(state) => (
+          <Button
+            type="submit"
+            size="lg"
+            disabled={!state.canSubmit || state.isSubmitting}
+            className="w-full md:w-auto md:justify-self-end"
+          >
+            {state.isSubmitting ? "Publication..." : "Publier le lieu"}
+          </Button>
+        )}
+      </form.Subscribe>
+    </form>
+  )
+}
