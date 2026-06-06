@@ -31,7 +31,7 @@ function HomePage() {
               Guadeloupe et spots visuels
             </Badge>
             <div className="space-y-4">
-              <h1 className="max-w-3xl text-5xl font-black leading-none md:text-7xl">
+              <h1 className="display-title max-w-3xl text-5xl md:text-7xl">
                 Trouve le lieu de ton prochain shoot
               </h1>
               <p className="max-w-2xl text-lg font-medium leading-8">
@@ -63,11 +63,11 @@ function HomePage() {
               </div>
             )}
             <div className="border-t border-line p-5">
-              <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted">
+              <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-normal text-muted">
                 <MapPin className="h-4 w-4" aria-hidden="true" />
                 Spot à découvrir
               </p>
-              <h2 className="mt-2 text-3xl font-black">
+              <h2 className="section-title mt-2 text-3xl">
                 {featuredPlace?.title ?? "Le prochain lieu est à toi"}
               </h2>
               <p className="mt-2 text-muted">
@@ -91,7 +91,7 @@ function HomePage() {
       <section id="spots" className="mx-auto max-w-7xl px-5 py-12">
         <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
-            <h2 className="text-4xl font-black">Les lieux récents</h2>
+            <h2 className="section-title text-4xl">Les lieux récents</h2>
             <p className="mt-2 text-muted">
               Pour préparer vite un rendu, un itinéraire et les contraintes du terrain.
             </p>
@@ -109,7 +109,7 @@ function HomePage() {
           </div>
         ) : (
           <Card className="grid gap-4 p-8 text-center">
-            <h3 className="text-3xl font-black">Aucun lieu publié</h3>
+            <h3 className="section-title text-3xl">Aucun lieu publié</h3>
             <p className="mx-auto max-w-2xl text-muted">
               Le socle est prêt pour collecter les premiers spots. Le MVP publie
               immédiatement les lieux ajoutés par les utilisateurs connectés.

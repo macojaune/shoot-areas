@@ -35,7 +35,7 @@ export const Route = createRootRoute({
   notFoundComponent: () => (
     <RootDocument>
       <main className="mx-auto max-w-3xl px-5 py-20 text-center">
-        <h1 className="text-5xl font-black">Lieu introuvable</h1>
+        <h1 className="display-title text-5xl">Lieu introuvable</h1>
         <p className="mt-4 text-muted">Cette page n'existe pas encore.</p>
         <Button asChild className="mt-8">
           <Link to="/">Retour à l'accueil</Link>
@@ -66,7 +66,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <div className="min-h-screen bg-paper text-ink">
             <header className="border-b border-line bg-surface">
               <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4">
-                <Link to="/" className="text-2xl font-black">
+                <Link to="/" className="brand-mark text-3xl">
                   Shootareas
                 </Link>
                 <nav className="flex items-center gap-2">
@@ -80,7 +80,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             {children}
             <footer className="border-t border-line bg-ink px-5 py-8 text-paper">
               <div className="mx-auto flex max-w-7xl flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <p className="text-2xl font-black">Shootareas</p>
+                <p className="brand-mark text-3xl">Shootareas</p>
                 <p className="max-w-xl text-sm text-paper/70">
                   Spots photo, vidéo et contenus créatifs, avec les infos terrain
                   qu'on aimerait toujours avoir avant d'y aller.

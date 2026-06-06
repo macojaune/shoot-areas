@@ -18,7 +18,7 @@ function NewPlacePage() {
   return (
     <main className="mx-auto max-w-5xl px-5 py-10">
       <div className="mb-8 max-w-3xl space-y-3">
-        <h1 className="text-5xl font-black">Ajouter un lieu</h1>
+        <h1 className="display-title text-5xl">Ajouter un lieu</h1>
         <p className="text-lg leading-8 text-muted">
           Le plus important est de donner les infos qu'on ne trouve pas en regardant
           seulement une carte : accès, lumière, affluence, contraintes et crédits

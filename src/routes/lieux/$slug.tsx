@@ -20,7 +20,7 @@ function PlacePage() {
   if (!place) {
     return (
       <main className="mx-auto max-w-3xl px-5 py-16 text-center">
-        <h1 className="text-5xl font-black">Spot introuvable</h1>
+        <h1 className="display-title text-5xl">Spot introuvable</h1>
         <p className="mt-3 text-muted">Ce lieu n'existe pas ou n'est plus publié.</p>
         <Button asChild className="mt-8">
           <Link to="/">Retour à l'accueil</Link>
@@ -51,7 +51,7 @@ function PlacePage() {
           </div>
 
           <div className="space-y-4">
-            <h1 className="text-5xl font-black leading-none md:text-7xl">
+            <h1 className="display-title text-5xl md:text-7xl">
               {place.title}
             </h1>
             <p className="flex items-center gap-2 text-lg font-semibold text-muted">
@@ -61,7 +61,7 @@ function PlacePage() {
           </div>
 
           <Card className="p-6">
-            <h2 className="text-2xl font-black">Tips de l'éclaireur·euse</h2>
+            <h2 className="section-title text-2xl">Tips de l'éclaireur·euse</h2>
             <p className="mt-4 whitespace-pre-wrap text-lg leading-8">
               {place.description}
             </p>
@@ -140,10 +140,10 @@ function PlacePage() {
 function Metric({ title, value }: { title: string; value: string }) {
   return (
     <Card className="p-4">
-      <p className="text-sm font-semibold uppercase tracking-wide text-muted">
+      <p className="text-sm font-semibold uppercase tracking-normal text-muted">
         {title}
       </p>
-      <p className="mt-3 text-3xl font-black">{value}</p>
+      <p className="section-title mt-3 text-3xl">{value}</p>
     </Card>
   )
 }
@@ -157,7 +157,7 @@ function InfoBlock({
 }) {
   return (
     <Card className="p-5">
-      <h2 className="text-xl font-black">{title}</h2>
+      <h2 className="section-title text-xl">{title}</h2>
       <p className="mt-3 whitespace-pre-wrap leading-7 text-muted">
         {content || "Non précisé pour le moment."}
       </p>

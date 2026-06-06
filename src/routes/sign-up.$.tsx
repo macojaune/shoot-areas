@@ -12,7 +12,7 @@ function SignUpPage() {
     return (
       <main className="flex min-h-[70vh] items-center justify-center px-5 py-12">
         <Card className="max-w-md p-6 text-center">
-          <h1 className="text-3xl font-black">Clerk non configuré</h1>
+          <h1 className="section-title text-3xl">Clerk non configuré</h1>
           <p className="mt-3 text-muted">
             Ajoute les clés Clerk dans `.env` pour tester l'inscription.
           </p>

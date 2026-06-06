@@ -30,7 +30,7 @@ export function PlaceCard({ place }: { place: PlaceListItem }) {
           ))}
         </div>
         <div className="space-y-2">
-          <h3 className="text-2xl font-black leading-tight">{place.title}</h3>
+          <h3 className="section-title text-2xl">{place.title}</h3>
           <p className="flex items-center gap-2 text-sm font-semibold text-muted">
             <MapPin className="h-4 w-4" aria-hidden="true" />
             {place.city}, {place.country}

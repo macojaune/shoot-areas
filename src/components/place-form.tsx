@@ -212,7 +212,7 @@ export function PlaceForm({ categories }: { categories: Category[] }) {
       </Card>
 
       <Card className="grid gap-5 p-5">
-        <h2 className="text-2xl font-black">Préparer le shoot</h2>
+        <h2 className="section-title text-2xl">Préparer le shoot</h2>
         <div className="grid gap-5 md:grid-cols-2">
           <form.Field name="accessNotes">
             {(field) => (
@@ -320,7 +320,7 @@ export function PlaceForm({ categories }: { categories: Category[] }) {
       </Card>
 
       <Card className="grid gap-5 p-5">
-        <h2 className="text-2xl font-black">Catégories</h2>
+        <h2 className="section-title text-2xl">Catégories</h2>
         <div className="flex flex-wrap gap-2">
           {categories.map((category) => {
             const selected = selectedCategories.includes(category.slug)
@@ -344,7 +344,7 @@ export function PlaceForm({ categories }: { categories: Category[] }) {
 
       <Card className="grid gap-5 p-5">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-2xl font-black">Images et crédits</h2>
+          <h2 className="section-title text-2xl">Images et crédits</h2>
           <Button
             type="button"
             variant="outline"
