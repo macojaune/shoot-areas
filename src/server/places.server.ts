@@ -1,6 +1,7 @@
 import { auth } from "@clerk/tanstack-react-start/server"
 import { desc, eq, inArray, sql } from "drizzle-orm"
 import { slugify } from "~/lib/utils"
+import { getContributorProfileForUser } from "~/server/contributor"
 import { db } from "~/server/db/client"
 import {
   categories,
@@ -91,12 +92,13 @@ export async function createPlaceHandler(data: CreatePlaceInput) {
     throw new Error("Connexion requise pour ajouter un spot.")
   }
 
+  const contributorProfile = await getContributorProfileForUser(userId)
   const cleanImages = data.images
-    .filter((image) => image.externalUrl && image.creditName)
+    .filter((image) => image.externalUrl)
     .map((image, index) => ({
       externalUrl: image.externalUrl as string,
-      creditName: image.creditName as string,
-      creditUrl: image.creditUrl || null,
+      creditName: image.creditName?.trim() || contributorProfile.creditName,
+      creditUrl: image.creditUrl || contributorProfile.creditUrl || null,
       caption: image.caption || null,
       sortOrder: index,
     }))

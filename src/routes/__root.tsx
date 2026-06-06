@@ -1,9 +1,6 @@
 /// <reference types="vite/client" />
-import {
-  ClerkProvider,
-  Show,
-  UserButton,
-} from "@clerk/tanstack-react-start"
+import { ClerkProvider, Show, UserButton } from "@clerk/tanstack-react-start"
+import { CircleUserRound } from "lucide-react"
 import {
   HeadContent,
   Link,
@@ -70,10 +67,19 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <div className="min-h-screen bg-paper text-ink">
             <header className="border-b border-line bg-surface">
               <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4">
-                <Link to="/" className="brand-mark text-3xl">
-                  Shootareas
+                <Link
+                  to="/"
+                  className="flex min-w-0 items-center gap-2.5 text-3xl"
+                >
+                  <img
+                    src="/favicon.svg"
+                    alt=""
+                    aria-hidden="true"
+                    className="size-8 shrink-0"
+                  />
+                  <span className="brand-mark truncate">Shootareas</span>
                 </Link>
-                <nav className="flex items-center gap-2">
+                <nav aria-label="Navigation principale" className="flex items-center gap-2">
                   <Button asChild variant="secondary">
                     <Link to="/nouveau-lieu">Ajouter un spot</Link>
                   </Button>
@@ -95,7 +101,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                   .
                 </p>
                 <div className="grid gap-6 md:grid-cols-3 md:items-center">
-                  <nav className="order-2 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm font-semibold md:order-1 md:justify-start">
+                  <nav
+                    aria-label="Navigation du pied de page"
+                    className="order-2 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm font-semibold md:order-1 md:justify-start"
+                  >
                     <Link to="/">Accueil</Link>
                     <Link to="/nouveau-lieu">Ajouter un spot</Link>
                     <Link to="/a-propos">À propos</Link>
@@ -135,6 +144,11 @@ function AccountMenu({ clerkConfigured }: { clerkConfigured: boolean }) {
 
   return (
     <Show when="signed-in">
+      <Button asChild variant="ghost" size="icon">
+        <Link to="/profil" aria-label="Mon profil de contribution" title="Mon profil">
+          <CircleUserRound className="h-5 w-5" aria-hidden="true" />
+        </Link>
+      </Button>
       <UserButton />
     </Show>
   )

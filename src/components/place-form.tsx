@@ -1,7 +1,7 @@
 import { useForm } from "@tanstack/react-form"
 import { useRouter } from "@tanstack/react-router"
 import { useServerFn } from "@tanstack/react-start"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2, Upload } from "lucide-react"
 import * as React from "react"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
@@ -9,7 +9,9 @@ import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
 import { Textarea } from "~/components/ui/textarea"
 import { createPlace, type CreatePlaceInput } from "~/server/places"
+import { createImageUpload } from "~/server/media"
 import type { Category } from "~/server/db/schema"
+import type { ContributorProfile } from "~/server/contributor"
 
 type ImageDraft = {
   externalUrl: string
@@ -25,27 +27,59 @@ const emptyImage: ImageDraft = {
   caption: "",
 }
 
+const territories = [
+  "Guadeloupe",
+  "Martinique",
+  "Guyane française",
+  "La Réunion",
+  "Mayotte",
+  "Saint-Barthélemy",
+  "Saint-Martin",
+  "France",
+  "Autre",
+]
+
 function FieldError({ errors }: { errors: unknown[] }) {
-  if (errors.length === 0) return null
   return (
-    <p className="text-sm font-semibold text-clay">
+    <p className="min-h-5 text-sm leading-5 font-semibold text-clay" aria-live="polite">
       {errors.map((error) => String(error)).join(", ")}
     </p>
   )
 }
 
-export function PlaceForm({ categories }: { categories: Category[] }) {
+export function PlaceForm({
+  categories,
+  contributorProfile,
+}: {
+  categories: Category[]
+  contributorProfile: ContributorProfile
+}) {
   const router = useRouter()
   const submitPlace = useServerFn(createPlace)
+  const requestImageUpload = useServerFn(createImageUpload)
   const [selectedCategories, setSelectedCategories] = React.useState<string[]>([])
-  const [images, setImages] = React.useState<ImageDraft[]>([{ ...emptyImage }])
+  const imageDraft = React.useCallback(
+    (): ImageDraft => ({
+      ...emptyImage,
+      creditName: contributorProfile.creditName,
+      creditUrl: contributorProfile.creditUrl,
+    }),
+    [contributorProfile.creditName, contributorProfile.creditUrl]
+  )
+  const [images, setImages] = React.useState<ImageDraft[]>(() => [imageDraft()])
   const [submitError, setSubmitError] = React.useState<string | null>(null)
+  const [uploadError, setUploadError] = React.useState<string | null>(null)
+  const [uploadingImageIndex, setUploadingImageIndex] = React.useState<number | null>(
+    null
+  )
+  const fileInputs = React.useRef<Record<number, HTMLInputElement | null>>({})
 
   const form = useForm({
     defaultValues: {
       title: "",
       description: "",
       country: "Guadeloupe",
+      customCountry: "",
       city: "",
       address: "",
       latitude: "",
@@ -60,10 +94,24 @@ export function PlaceForm({ categories }: { categories: Category[] }) {
     onSubmit: async ({ value }) => {
       setSubmitError(null)
 
+      const { customCountry, ...placeValues } = value
+      const country =
+        placeValues.country === "Autre"
+          ? customCountry.trim()
+          : placeValues.country
+
+      if (country.length < 2) {
+        setSubmitError("Indique le territoire du spot.")
+        return
+      }
+
       const payload: CreatePlaceInput = {
-        ...value,
-        latitude: value.latitude === "" ? null : Number(value.latitude),
-        longitude: value.longitude === "" ? null : Number(value.longitude),
+        ...placeValues,
+        country,
+        latitude:
+          placeValues.latitude === "" ? null : Number(placeValues.latitude),
+        longitude:
+          placeValues.longitude === "" ? null : Number(placeValues.longitude),
         categorySlugs: selectedCategories,
         images,
       }
@@ -95,6 +143,38 @@ export function PlaceForm({ categories }: { categories: Category[] }) {
         imageIndex === index ? { ...image, [field]: value } : image
       )
     )
+  }
+
+  async function uploadImage(index: number, file: File) {
+    setUploadError(null)
+    setUploadingImageIndex(index)
+
+    try {
+      const { uploadUrl, publicUrl } = await requestImageUpload({
+        data: {
+          fileName: file.name,
+          contentType: file.type as "image/avif" | "image/jpeg" | "image/png" | "image/webp",
+          size: file.size,
+        },
+      })
+      const response = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      })
+
+      if (!response.ok) {
+        throw new Error("L'image n'a pas pu être envoyée.")
+      }
+
+      updateImage(index, "externalUrl", publicUrl)
+    } catch (error) {
+      setUploadError(
+        error instanceof Error ? error.message : "L'image n'a pas pu être envoyée."
+      )
+    } finally {
+      setUploadingImageIndex(null)
+    }
   }
 
   return (
@@ -135,13 +215,21 @@ export function PlaceForm({ categories }: { categories: Category[] }) {
             {(field) => (
               <div className="grid gap-2">
                 <Label htmlFor={field.name}>Pays / territoire</Label>
-                <Input
+                <select
                   id={field.name}
                   name={field.name}
+                  className="h-12 w-full border border-line bg-surface px-3 text-base outline-none transition focus:ring-2 focus:ring-sun"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}
-                />
+                >
+                  {territories.map((territory) => (
+                    <option key={territory} value={territory}>
+                      {territory}
+                    </option>
+                  ))}
+                </select>
+                <FieldError errors={field.state.meta.errors} />
               </div>
             )}
           </form.Field>
@@ -168,6 +256,35 @@ export function PlaceForm({ categories }: { categories: Category[] }) {
             )}
           </form.Field>
         </div>
+
+        <form.Subscribe selector={(state) => state.values.country === "Autre"}>
+          {(isCustomTerritory) =>
+            isCustomTerritory ? (
+              <form.Field
+                name="customCountry"
+                validators={{
+                  onChange: ({ value }) =>
+                    value.trim().length >= 2 ? undefined : "Territoire requis",
+                }}
+              >
+                {(field) => (
+                  <div className="grid gap-2">
+                    <Label htmlFor={field.name}>Précise le territoire</Label>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      placeholder="Par exemple : Dominique"
+                      onBlur={field.handleBlur}
+                      onChange={(event) => field.handleChange(event.target.value)}
+                    />
+                    <FieldError errors={field.state.meta.errors} />
+                  </div>
+                )}
+              </form.Field>
+            ) : null
+          }
+        </form.Subscribe>
 
         <form.Field name="address">
           {(field) => (
@@ -343,24 +460,30 @@ export function PlaceForm({ categories }: { categories: Category[] }) {
       </Card>
 
       <Card className="grid gap-5 p-5">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="section-title text-2xl">Images et crédits</h2>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setImages((current) => [...current, { ...emptyImage }])}
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            Image
-          </Button>
-        </div>
+        <h2 className="section-title text-2xl">Images et crédits</h2>
+        <p className="text-sm leading-6 text-muted">
+          Colle une URL ou importe une image. Le crédit du profil est déjà prérempli.
+        </p>
+        {uploadError ? <p className="font-semibold text-clay">{uploadError}</p> : null}
         {images.map((image, index) => (
           <div
             key={index}
             className="grid gap-3 border border-line bg-paper p-4 md:grid-cols-2"
           >
             <div className="grid gap-2 md:col-span-2">
-              <Label htmlFor={`image-${index}`}>URL image</Label>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Label htmlFor={`image-${index}`}>URL image</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={uploadingImageIndex === index}
+                  onClick={() => fileInputs.current[index]?.click()}
+                >
+                  <Upload className="h-4 w-4" aria-hidden="true" />
+                  {uploadingImageIndex === index ? "Envoi..." : "Importer une image"}
+                </Button>
+              </div>
               <Input
                 id={`image-${index}`}
                 value={image.externalUrl}
@@ -368,6 +491,19 @@ export function PlaceForm({ categories }: { categories: Category[] }) {
                 onChange={(event) =>
                   updateImage(index, "externalUrl", event.target.value)
                 }
+              />
+              <input
+                ref={(element) => {
+                  fileInputs.current[index] = element
+                }}
+                type="file"
+                accept="image/avif,image/jpeg,image/png,image/webp"
+                className="sr-only"
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  event.target.value = ""
+                  if (file) void uploadImage(index, file)
+                }}
               />
             </div>
             <div className="grid gap-2">
@@ -420,6 +556,15 @@ export function PlaceForm({ categories }: { categories: Category[] }) {
             ) : null}
           </div>
         ))}
+        <Button
+          type="button"
+          variant="outline"
+          className="justify-self-start"
+          onClick={() => setImages((current) => [...current, imageDraft()])}
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          Ajouter une autre image
+        </Button>
       </Card>
 
       {submitError ? (

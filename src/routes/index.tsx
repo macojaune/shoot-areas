@@ -5,6 +5,7 @@ import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
 import { PlaceCard } from "~/components/place-card"
 import { PlaceMap } from "~/components/place-map"
+import { SpotMedia } from "~/components/spot-media"
 import { listCategories, listPlaces } from "~/server/places"
 
 export const Route = createFileRoute("/")({
@@ -41,8 +42,8 @@ function HomePage() {
 
           <Card className="overflow-hidden bg-surface">
             {featuredPlace?.images[0] ? (
-              <img
-                src={featuredPlace.images[0].externalUrl}
+              <SpotMedia
+                url={featuredPlace.images[0].externalUrl}
                 alt={featuredPlace.images[0].caption || featuredPlace.title}
                 className="aspect-[5/4] w-full object-cover"
               />

@@ -3,6 +3,7 @@ import { ArrowLeft, ExternalLink, MapPin, Navigation } from "lucide-react"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
+import { SpotMedia } from "~/components/spot-media"
 import { navigationUrl } from "~/lib/utils"
 import { getPlaceBySlug } from "~/server/places"
 
@@ -97,11 +98,11 @@ function PlacePage() {
             {place.images.length > 0 ? (
               place.images.map((image) => (
                 <Card key={image.id} className="overflow-hidden">
-                  <img
-                    src={image.externalUrl}
+                  <SpotMedia
+                    url={image.externalUrl}
                     alt={image.caption || place.title}
                     className="w-full object-cover"
-                    loading="lazy"
+                    variant="embed"
                   />
                   <div className="space-y-2 border-t border-line p-4">
                     {image.caption ? (
