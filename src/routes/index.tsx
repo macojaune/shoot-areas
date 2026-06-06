@@ -4,6 +4,7 @@ import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
 import { PlaceCard } from "~/components/place-card"
+import { PlaceMap } from "~/components/place-map"
 import { listCategories, listPlaces } from "~/server/places"
 
 export const Route = createFileRoute("/")({
@@ -87,6 +88,8 @@ function HomePage() {
           ))}
         </div>
       </section>
+
+      <PlaceMap places={places} />
 
       <section id="spots" className="mx-auto max-w-7xl px-5 py-12">
         <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
