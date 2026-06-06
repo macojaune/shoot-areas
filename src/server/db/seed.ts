@@ -1,5 +1,5 @@
 import { slugify } from "~/lib/utils"
-import { seedCategoryIfMissing } from "~/server/places"
+import { seedCategoryIfMissing } from "~/server/places.server"
 
 const categoryTitles = [
   "Nature",
