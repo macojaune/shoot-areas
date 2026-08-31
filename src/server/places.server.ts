@@ -10,6 +10,7 @@ import { db } from "~/server/db/client"
 import {
   categories,
   categoriesToPlaces,
+  placeFavorites,
   placeImages,
   placeReviews,
   places,
@@ -22,6 +23,7 @@ import type {
   CreateSpotReviewInput,
   ListPlacesFilter,
   PlaceDetail,
+  ProfileDashboard,
   PlaceListItem,
 } from "~/server/places"
 
@@ -43,7 +45,7 @@ async function getUniqueSlug(title: string) {
   }
 }
 
-async function hydratePlaces(rows: Place[]): Promise<PlaceListItem[]> {
+export async function hydratePlaces(rows: Place[]): Promise<PlaceListItem[]> {
   if (rows.length === 0) return []
   const placeIds = rows.map((place) => place.id)
 
@@ -106,11 +108,14 @@ export async function getPlaceBySlugHandler(data: { slug: string }) {
   const [place] = await hydratePlaces(rows)
   if (!place) return null
 
-  const reviews = await db
-    .select()
-    .from(placeReviews)
-    .where(eq(placeReviews.placeId, place.id))
-    .orderBy(desc(placeReviews.createdAt))
+  const [{ userId: viewerId }, reviews] = await Promise.all([
+    auth(),
+    db
+      .select()
+      .from(placeReviews)
+      .where(eq(placeReviews.placeId, place.id))
+      .orderBy(desc(placeReviews.createdAt)),
+  ])
   const contributors = await getContributorProfilesForUsers([
     place.createdByClerkId,
     ...reviews.map((review) => review.createdByClerkId),
@@ -124,6 +129,15 @@ export async function getPlaceBySlugHandler(data: { slug: string }) {
     reviewCount > 0
       ? reviews.reduce((total, review) => total + review.rating, 0) / reviewCount
       : null
+  const [favorite] = viewerId
+    ? await db
+        .select({ id: placeFavorites.id })
+        .from(placeFavorites)
+        .where(
+          sql`${placeFavorites.placeId} = ${place.id} and ${placeFavorites.createdByClerkId} = ${viewerId}`
+        )
+        .limit(1)
+    : []
 
   return {
     ...place,
@@ -134,6 +148,7 @@ export async function getPlaceBySlugHandler(data: { slug: string }) {
     })),
     averageRating,
     reviewCount,
+    isFavoritedByViewer: Boolean(favorite),
   } satisfies PlaceDetail
 }
 
@@ -283,6 +298,96 @@ export async function createSpotReviewHandler(data: CreateSpotReviewInput) {
   }
 
   return review
+}
+
+async function requireCurrentUserId() {
+  const { isAuthenticated, userId } = await auth()
+  if (!isAuthenticated || !userId) {
+    throw new Error("Connexion requise pour enregistrer un spot.")
+  }
+  return userId
+}
+
+export async function togglePlaceFavoriteHandler(data: { placeId: number }) {
+  const userId = await requireCurrentUserId()
+  const [place] = await db
+    .select({ id: places.id })
+    .from(places)
+    .where(eq(places.id, data.placeId))
+    .limit(1)
+
+  if (!place) throw new Error("Ce spot n'existe plus.")
+
+  const [existingFavorite] = await db
+    .select({ id: placeFavorites.id })
+    .from(placeFavorites)
+    .where(
+      sql`${placeFavorites.placeId} = ${data.placeId} and ${placeFavorites.createdByClerkId} = ${userId}`
+    )
+    .limit(1)
+
+  if (existingFavorite) {
+    await db.delete(placeFavorites).where(eq(placeFavorites.id, existingFavorite.id))
+    return { isFavorite: false }
+  }
+
+  await db.insert(placeFavorites).values({
+    placeId: data.placeId,
+    createdByClerkId: userId,
+  })
+
+  return { isFavorite: true }
+}
+
+export async function getProfileDashboardHandler(): Promise<ProfileDashboard> {
+  const userId = await requireCurrentUserId()
+  const [spotRows, favoriteRows, reviewCountRows] = await Promise.all([
+    db
+      .select()
+      .from(places)
+      .where(eq(places.createdByClerkId, userId))
+      .orderBy(desc(places.createdAt)),
+    db
+      .select({ place: places })
+      .from(placeFavorites)
+      .innerJoin(places, eq(placeFavorites.placeId, places.id))
+      .where(eq(placeFavorites.createdByClerkId, userId))
+      .orderBy(desc(placeFavorites.createdAt)),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(placeReviews)
+      .where(eq(placeReviews.createdByClerkId, userId)),
+  ])
+  const [spots, favorites] = await Promise.all([
+    hydratePlaces(spotRows),
+    hydratePlaces(favoriteRows.map((row) => row.place)),
+  ])
+
+  return {
+    spots,
+    favorites,
+    stats: {
+      spotCount: spots.length,
+      favoriteCount: favorites.length,
+      reviewCount: Number(reviewCountRows[0]?.count ?? 0),
+    },
+  }
+}
+
+export async function getPublicContributorDashboardHandler(data: { userId: string }) {
+  const [profile, spotRows] = await Promise.all([
+    getContributorProfileForUser(data.userId),
+    db
+      .select()
+      .from(places)
+      .where(eq(places.createdByClerkId, data.userId))
+      .orderBy(desc(places.createdAt)),
+  ])
+
+  return {
+    profile,
+    spots: await hydratePlaces(spotRows),
+  }
 }
 
 export async function seedCategoryIfMissing(category: {

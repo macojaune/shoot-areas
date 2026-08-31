@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import { ClerkProvider, Show, UserButton, useUser } from "@clerk/tanstack-react-start"
 import { CircleUserRound } from "lucide-react"
+import { frFR } from "@clerk/localizations"
 import {
   HeadContent,
   Link,
@@ -153,7 +154,7 @@ function MaybeClerkProvider({
   children: React.ReactNode
 }) {
   if (!enabled) return <>{children}</>
-  return <ClerkProvider>{children}</ClerkProvider>
+  return <ClerkProvider localization={frFR}>{children}</ClerkProvider>
 }
 
 function AccountMenu({ clerkConfigured }: { clerkConfigured: boolean }) {
@@ -187,11 +188,7 @@ function PostHogUserIdentifier() {
     if (!isLoaded || !posthog) return
 
     if (isSignedIn && user) {
-      posthog.identify(user.id, {
-        credit_name:
-          (user.publicMetadata as { shootareas?: { creditName?: string } })
-            ?.shootareas?.creditName ?? undefined,
-      })
+      posthog.identify(user.id)
     }
   }, [isLoaded, isSignedIn, user?.id, posthog])
 

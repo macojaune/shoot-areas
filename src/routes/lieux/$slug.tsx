@@ -13,6 +13,7 @@ import * as React from "react"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
+import { FavoriteButton } from "~/components/favorite-button"
 import { SpotMedia } from "~/components/spot-media"
 import {
   ContributorIdentity,
@@ -171,6 +172,11 @@ function PlacePage() {
         </section>
 
         <aside className="grid h-fit gap-4">
+          <FavoriteButton
+            placeId={place.id}
+            initialValue={place.isFavoritedByViewer}
+            className="w-full"
+          />
           {navUrl ? (
             <Button asChild size="lg" variant="secondary" className="w-full">
               <a

@@ -153,7 +153,7 @@ export function PlaceForm({
   }
 
   function useCurrentLocation() {
-    if (!navigator.geolocation) {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
       setLocationStatus("error")
       setLocationMessage("La géolocalisation n'est pas disponible sur cet appareil.")
       return

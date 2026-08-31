@@ -109,6 +109,42 @@ export const placeReviews = sqliteTable(
   })
 )
 
+export const contributorProfiles = sqliteTable(
+  "contributor_profiles",
+  {
+    id: int("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    clerkUserId: text("clerk_user_id").notNull(),
+    bio: text("bio").notNull().default(""),
+    socialLinks: text("social_links").notNull().default("[]"),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    clerkUserIdx: uniqueIndex("contributor_profiles_clerk_user_idx").on(
+      table.clerkUserId
+    ),
+  })
+)
+
+export const placeFavorites = sqliteTable(
+  "place_favorites",
+  {
+    id: int("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    placeId: int("place_id")
+      .notNull()
+      .references(() => places.id, { onDelete: "cascade" }),
+    createdByClerkId: text("created_by_clerk_id").notNull(),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    placeIdx: index("place_favorites_place_idx").on(table.placeId),
+    userIdx: index("place_favorites_user_idx").on(table.createdByClerkId),
+    uniqueUserFavorite: uniqueIndex("place_favorites_unique_user_idx").on(
+      table.placeId,
+      table.createdByClerkId
+    ),
+  })
+)
+
 export const placesRelations = relations(places, ({ many }) => ({
   categories: many(categoriesToPlaces),
   images: many(placeImages),
@@ -151,3 +187,5 @@ export type Place = typeof places.$inferSelect
 export type PlaceImage = typeof placeImages.$inferSelect
 export type PlaceReview = typeof placeReviews.$inferSelect
 export type Category = typeof categories.$inferSelect
+export type ContributorProfileRecord = typeof contributorProfiles.$inferSelect
+export type PlaceFavorite = typeof placeFavorites.$inferSelect

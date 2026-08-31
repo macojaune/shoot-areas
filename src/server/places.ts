@@ -57,6 +57,7 @@ export type PlaceDetail = PlaceListItem & {
   reviews: PlaceReviewWithContributor[]
   averageRating: number | null
   reviewCount: number
+  isFavoritedByViewer: boolean
 }
 
 export const createSpotReviewInputSchema = z.object({
@@ -70,6 +71,20 @@ export const createSpotReviewInputSchema = z.object({
 })
 
 export type CreateSpotReviewInput = z.infer<typeof createSpotReviewInputSchema>
+
+const favoriteInputSchema = z.object({
+  placeId: z.number().int().positive(),
+})
+
+export type ProfileDashboard = {
+  spots: PlaceListItem[]
+  favorites: PlaceListItem[]
+  stats: {
+    spotCount: number
+    favoriteCount: number
+    reviewCount: number
+  }
+}
 
 export const listPlaces = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => listPlacesFilterSchema.parse(input))
@@ -104,4 +119,27 @@ export const createSpotReview = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { createSpotReviewHandler } = await import("~/server/places.server")
     return createSpotReviewHandler(data)
+  })
+
+export const togglePlaceFavorite = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => favoriteInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { togglePlaceFavoriteHandler } = await import("~/server/places.server")
+    return togglePlaceFavoriteHandler(data)
+  })
+
+export const getProfileDashboard = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const { getProfileDashboardHandler } = await import("~/server/places.server")
+    return getProfileDashboardHandler()
+  }
+)
+
+export const getPublicContributorDashboard = createServerFn({ method: "GET" })
+  .inputValidator((input: unknown) => z.object({ userId: z.string().min(1) }).parse(input))
+  .handler(async ({ data }) => {
+    const { getPublicContributorDashboardHandler } = await import(
+      "~/server/places.server"
+    )
+    return getPublicContributorDashboardHandler(data)
   })

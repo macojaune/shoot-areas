@@ -52,17 +52,14 @@ export function ContributorIdentity({
     </>
   )
 
-  return contributor.creditUrl ? (
-    <a
-      href={contributor.creditUrl}
-      target="_blank"
-      rel="noreferrer"
+  return (
+    <Link
+      to="/eclaireurs/$userId"
+      params={{ userId: contributor.userId }}
       className="inline-flex max-w-full items-center gap-3 rounded-sm outline-none transition hover:text-clay focus-visible:ring-2 focus-visible:ring-sun"
     >
       {identity}
-    </a>
-  ) : (
-    <div className="inline-flex max-w-full items-center gap-3">{identity}</div>
+    </Link>
   )
 }
 

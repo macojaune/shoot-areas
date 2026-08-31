@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
 import { Route as LieuxSlugRouteImport } from './routes/lieux/$slug'
+import { Route as EclaireursUserIdRouteImport } from './routes/eclaireurs/$userId'
 
 const ProfilRoute = ProfilRouteImport.update({
   id: '/profil',
@@ -58,6 +59,11 @@ const LieuxSlugRoute = LieuxSlugRouteImport.update({
   path: '/lieux/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EclaireursUserIdRoute = EclaireursUserIdRouteImport.update({
+  id: '/eclaireurs/$userId',
+  path: '/eclaireurs/$userId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/mentions-legales': typeof MentionsLegalesRoute
   '/nouveau-lieu': typeof NouveauLieuRoute
   '/profil': typeof ProfilRoute
+  '/eclaireurs/$userId': typeof EclaireursUserIdRoute
   '/lieux/$slug': typeof LieuxSlugRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/mentions-legales': typeof MentionsLegalesRoute
   '/nouveau-lieu': typeof NouveauLieuRoute
   '/profil': typeof ProfilRoute
+  '/eclaireurs/$userId': typeof EclaireursUserIdRoute
   '/lieux/$slug': typeof LieuxSlugRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/mentions-legales': typeof MentionsLegalesRoute
   '/nouveau-lieu': typeof NouveauLieuRoute
   '/profil': typeof ProfilRoute
+  '/eclaireurs/$userId': typeof EclaireursUserIdRoute
   '/lieux/$slug': typeof LieuxSlugRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/mentions-legales'
     | '/nouveau-lieu'
     | '/profil'
+    | '/eclaireurs/$userId'
     | '/lieux/$slug'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/mentions-legales'
     | '/nouveau-lieu'
     | '/profil'
+    | '/eclaireurs/$userId'
     | '/lieux/$slug'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/mentions-legales'
     | '/nouveau-lieu'
     | '/profil'
+    | '/eclaireurs/$userId'
     | '/lieux/$slug'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -129,6 +141,7 @@ export interface RootRouteChildren {
   MentionsLegalesRoute: typeof MentionsLegalesRoute
   NouveauLieuRoute: typeof NouveauLieuRoute
   ProfilRoute: typeof ProfilRoute
+  EclaireursUserIdRoute: typeof EclaireursUserIdRoute
   LieuxSlugRoute: typeof LieuxSlugRoute
   SignInSplatRoute: typeof SignInSplatRoute
   SignUpSplatRoute: typeof SignUpSplatRoute
@@ -192,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LieuxSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/eclaireurs/$userId': {
+      id: '/eclaireurs/$userId'
+      path: '/eclaireurs/$userId'
+      fullPath: '/eclaireurs/$userId'
+      preLoaderRoute: typeof EclaireursUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -201,6 +221,7 @@ const rootRouteChildren: RootRouteChildren = {
   MentionsLegalesRoute: MentionsLegalesRoute,
   NouveauLieuRoute: NouveauLieuRoute,
   ProfilRoute: ProfilRoute,
+  EclaireursUserIdRoute: EclaireursUserIdRoute,
   LieuxSlugRoute: LieuxSlugRoute,
   SignInSplatRoute: SignInSplatRoute,
   SignUpSplatRoute: SignUpSplatRoute,
