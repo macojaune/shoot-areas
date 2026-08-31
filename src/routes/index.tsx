@@ -1,27 +1,57 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { Camera, MapPin } from "lucide-react"
+import { Building2, Camera, MapPin, MapPinned, Tag, X } from "lucide-react"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
 import { PlaceCard } from "~/components/place-card"
 import { PlaceMap } from "~/components/place-map"
-import { SpotMedia } from "~/components/spot-media"
-import { listCategories, listPlaces } from "~/server/places"
+import { isSocialUrl, SpotMedia } from "~/components/spot-media"
+import {
+  listCategories,
+  listPlaces,
+  listPlacesFilterSchema,
+} from "~/server/places"
 
 export const Route = createFileRoute("/")({
-  loader: async () => {
-    const [places, categories] = await Promise.all([
-      listPlaces(),
+  validateSearch: (search) => listPlacesFilterSchema.parse(search),
+  loader: async ({ location }) => {
+    const search = listPlacesFilterSchema.parse(location.search)
+    const [allPlaces, filteredPlaces, categories] = await Promise.all([
+      listPlaces({ data: {} }),
+      listPlaces({ data: search }),
       listCategories(),
     ])
-    return { places, categories }
+    return { allPlaces, filteredPlaces, categories }
   },
   component: HomePage,
 })
 
 function HomePage() {
-  const { places, categories } = Route.useLoaderData()
-  const featuredPlace = places[0]
+  const { allPlaces, filteredPlaces, categories } = Route.useLoaderData()
+  const search = Route.useSearch()
+  const featuredPlace = allPlaces[0]
+  const featuredImage = featuredPlace?.images.find(
+    (image) => !isSocialUrl(image.externalUrl)
+  )
+  const recentPlaces = allPlaces.slice(0, 3)
+  const countries = [...new Set(allPlaces.map((place) => place.country))].sort((a, b) =>
+    a.localeCompare(b, "fr")
+  )
+  const cities = [
+    ...new Map(
+      allPlaces.map((place) => [
+        `${place.country}::${place.city}`,
+        { country: place.country, city: place.city },
+      ])
+    ).values(),
+  ].sort((left, right) => left.city.localeCompare(right.city, "fr"))
+  const activeFilterLabel = [
+    search.category && categories.find((category) => category.slug === search.category)?.title,
+    search.city,
+    search.country,
+  ]
+    .filter(Boolean)
+    .join(" · ")
 
   return (
     <main>
@@ -41,10 +71,10 @@ function HomePage() {
           </div>
 
           <Card className="overflow-hidden bg-surface">
-            {featuredPlace?.images[0] ? (
+            {featuredPlace && featuredImage ? (
               <SpotMedia
-                url={featuredPlace.images[0].externalUrl}
-                alt={featuredPlace.images[0].caption || featuredPlace.title}
+                url={featuredImage.externalUrl}
+                alt={featuredImage.caption || featuredPlace.title}
                 className="aspect-[5/4] w-full object-cover"
               />
             ) : (
@@ -71,21 +101,64 @@ function HomePage() {
       </section>
 
       <section className="border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-7xl flex-wrap gap-3 px-5 py-6">
-          {categories.map((category) => (
-            <Badge key={category.slug}>{category.title}</Badge>
-          ))}
+        <div className="mx-auto grid max-w-7xl gap-4 px-5 py-7 md:grid-cols-[minmax(13rem,0.35fr)_1fr] md:items-center">
+          <div>
+            <h2 className="section-title text-2xl">Explorer par catégorie</h2>
+            <p className="mt-2 text-sm leading-6 text-muted">
+              Commence par l’ambiance que tu veux créer.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => (
+              <Badge
+                key={category.slug}
+                asChild
+                className={
+                  search.category === category.slug
+                    ? "bg-ink text-paper hover:bg-clay"
+                    : "bg-lagoon/15 hover:bg-lagoon/30"
+                }
+              >
+                <Link
+                  to="/"
+                  hash="tous-les-spots"
+                  search={{ category: category.slug }}
+                >
+                  <Tag className="size-3.5" aria-hidden="true" />
+                  {category.title}
+                </Link>
+              </Badge>
+            ))}
+          </div>
         </div>
       </section>
 
-      <PlaceMap places={places} />
+      <section className="border-b border-line bg-ink text-paper">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 md:grid-cols-2 md:py-18">
+          <div>
+            <h2 className="section-title text-3xl text-paper">Le rendu ne suffit pas.</h2>
+            <p className="mt-4 max-w-xl leading-7 text-paper/75">
+              Une belle image ne dit pas toujours s’il faut marcher vingt minutes,
+              viser le matin ou éviter le dimanche. Ici, les détails terrain
+              comptent autant que le décor.
+            </p>
+          </div>
+          <div className="md:border-l md:border-paper/30 md:pl-10">
+            <h2 className="section-title text-3xl text-paper">Le repérage se partage.</h2>
+            <p className="mt-4 max-w-xl leading-7 text-paper/75">
+              Chaque spot aide à préparer la prochaine sortie, tout en mettant en
+              avant les créatif·ves qui l’ont repéré et documenté.
+            </p>
+          </div>
+        </div>
+      </section>
 
-      <section id="spots" className="mx-auto max-w-7xl px-5 py-12">
+      <section className="mx-auto max-w-7xl px-5 py-12">
         <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <h2 className="section-title text-4xl">Les spots récents</h2>
             <p className="mt-2 text-muted">
-              Pour préparer vite un rendu, un itinéraire et les contraintes du terrain.
+              Les trois derniers repérages publiés, toutes catégories confondues.
             </p>
           </div>
           <Button asChild variant="outline">
@@ -93,9 +166,9 @@ function HomePage() {
           </Button>
         </div>
 
-        {places.length > 0 ? (
+        {recentPlaces.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {places.map((place) => (
+            {recentPlaces.map((place) => (
               <PlaceCard key={place.id} place={place} />
             ))}
           </div>
@@ -106,12 +179,139 @@ function HomePage() {
               Le socle est prêt pour collecter les premiers spots. Le MVP publie
               immédiatement les spots ajoutés par les utilisateurs connectés.
             </p>
-            <Button asChild className="mx-auto">
-              <Link to="/nouveau-lieu">Ajouter le premier spot</Link>
-            </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button asChild>
+                <Link to="/nouveau-lieu">Ajouter le premier spot</Link>
+              </Button>
+            </div>
           </Card>
         )}
       </section>
+
+      <section id="tous-les-spots" className="border-t border-line bg-surface">
+        <div className="mx-auto max-w-7xl px-5 py-12">
+          <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h2 className="section-title text-4xl">
+                {activeFilterLabel ? `Spots : ${activeFilterLabel}` : "Tous les spots"}
+              </h2>
+              <p className="mt-2 text-muted">
+                {activeFilterLabel
+                  ? "Résultats correspondant aux labels sélectionnés."
+                  : "Filtre par territoire, commune ou catégorie pour préparer ton repérage."}
+              </p>
+            </div>
+            {activeFilterLabel ? (
+              <Button asChild variant="ghost">
+                <Link to="/">
+                  <X className="size-4" aria-hidden="true" />
+                  Effacer les filtres
+                </Link>
+              </Button>
+            ) : null}
+          </div>
+
+          <div className="grid gap-5 border-y border-line py-5">
+            <FilterGroup icon={MapPinned} label="Région">
+              {countries.map((country) => (
+                <Badge
+                  key={country}
+                  asChild
+                  className={
+                    search.country === country
+                      ? "bg-ink text-paper hover:bg-clay"
+                      : "hover:bg-paper"
+                  }
+                >
+                  <Link to="/" search={{ country }}>
+                    <MapPinned className="size-3.5" aria-hidden="true" />
+                    {country}
+                  </Link>
+                </Badge>
+              ))}
+            </FilterGroup>
+
+            <FilterGroup icon={Building2} label="Commune">
+              {cities.map(({ country, city }) => (
+                <Badge
+                  key={`${country}-${city}`}
+                  asChild
+                  className={
+                    search.country === country && search.city === city
+                      ? "bg-ink text-paper hover:bg-clay"
+                      : "hover:bg-paper"
+                  }
+                >
+                  <Link to="/" search={{ country, city }}>
+                    <Building2 className="size-3.5" aria-hidden="true" />
+                    {city}
+                  </Link>
+                </Badge>
+              ))}
+            </FilterGroup>
+
+            <FilterGroup icon={Tag} label="Catégories">
+              {categories.map((category) => (
+                <Badge
+                  key={category.slug}
+                  asChild
+                  className={
+                    search.category === category.slug
+                      ? "bg-ink text-paper hover:bg-clay"
+                      : "bg-lagoon/15 hover:bg-lagoon/30"
+                  }
+                >
+                  <Link to="/" search={{ category: category.slug }}>
+                    {category.title}
+                  </Link>
+                </Badge>
+              ))}
+            </FilterGroup>
+          </div>
+
+          <div className="mt-8">
+            {filteredPlaces.length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {filteredPlaces.map((place) => (
+                  <PlaceCard key={place.id} place={place} />
+                ))}
+              </div>
+            ) : (
+              <Card className="grid gap-4 p-8 text-center">
+                <h3 className="section-title text-3xl">Aucun spot avec ce filtre</h3>
+                <p className="mx-auto max-w-2xl text-muted">
+                  Essaie un autre label ou efface les filtres pour voir tous les spots.
+                </p>
+                <Button asChild variant="outline" className="mx-auto">
+                  <Link to="/">Effacer les filtres</Link>
+                </Button>
+              </Card>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <PlaceMap places={filteredPlaces} />
     </main>
+  )
+}
+
+function FilterGroup({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: typeof Tag
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="grid gap-2">
+      <p className="flex items-center gap-2 text-sm font-bold text-muted">
+        <Icon className="size-4" aria-hidden="true" />
+        {label}
+      </p>
+      <div className="flex flex-wrap gap-2">{children}</div>
+    </div>
   )
 }

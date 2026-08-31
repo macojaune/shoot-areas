@@ -80,7 +80,7 @@ function getSocialMedia(url: string): SocialMedia | null {
   return null
 }
 
-function isSocialUrl(url: string) {
+export function isSocialUrl(url: string) {
   try {
     const host = new URL(url).hostname.replace(/^www\./, "").toLowerCase()
     return [

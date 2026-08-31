@@ -26,6 +26,19 @@ bun run dev
 
 Copy `.env.example` to `.env` and fill the Clerk keys when testing protected routes.
 
+## Analytics PostHog
+
+Configure the PostHog project token for browser capture and server-side events:
+
+- `VITE_PUBLIC_POSTHOG_PROJECT_TOKEN`
+- `VITE_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com`
+- `POSTHOG_PROJECT_TOKEN`
+- `POSTHOG_HOST=https://eu.i.posthog.com`
+
+The two token variables use the same PostHog project token. In Coolify, make them
+available at build time and runtime so the browser bundle and Nitro handlers are
+both configured.
+
 ## Images R2
 
 Les images sont envoyées directement du navigateur vers le bucket R2 à l'aide

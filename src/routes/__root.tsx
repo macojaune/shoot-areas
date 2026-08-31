@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import { ClerkProvider, Show, UserButton } from "@clerk/tanstack-react-start"
+import { ClerkProvider, Show, UserButton, useUser } from "@clerk/tanstack-react-start"
 import { CircleUserRound } from "lucide-react"
 import {
   HeadContent,
@@ -8,6 +8,8 @@ import {
   Scripts,
   createRootRoute,
 } from "@tanstack/react-router"
+import { PostHogProvider, usePostHog } from "@posthog/react"
+import * as React from "react"
 import appCss from "~/styles/app.css?url"
 import { Button } from "~/components/ui/button"
 import { isClerkClientConfigured } from "~/lib/clerk"
@@ -56,6 +58,9 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const clerkConfigured = isClerkClientConfigured()
+  const posthogToken = import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN
+  const posthogHost =
+    import.meta.env.VITE_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com"
 
   return (
     <html lang="fr">
@@ -63,6 +68,16 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        <PostHogProvider
+          apiKey={posthogToken}
+          options={{
+            api_host: posthogHost,
+            ui_host: "https://eu.posthog.com",
+            defaults: "2025-05-24",
+            capture_exceptions: true,
+            debug: import.meta.env.DEV,
+          }}
+        >
         <MaybeClerkProvider enabled={clerkConfigured}>
           <div className="min-h-screen bg-paper text-ink">
             <header className="border-b border-line bg-surface">
@@ -121,7 +136,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               </div>
             </footer>
           </div>
+          {clerkConfigured ? <PostHogUserIdentifier /> : null}
         </MaybeClerkProvider>
+        </PostHogProvider>
         <Scripts />
       </body>
     </html>
@@ -144,12 +161,39 @@ function AccountMenu({ clerkConfigured }: { clerkConfigured: boolean }) {
 
   return (
     <Show when="signed-in">
-      <Button asChild variant="ghost" size="icon">
-        <Link to="/profil" aria-label="Mon profil de contribution" title="Mon profil">
-          <CircleUserRound className="h-5 w-5" aria-hidden="true" />
-        </Link>
-      </Button>
-      <UserButton />
+      <UserButton>
+        <UserButton.MenuItems>
+          <UserButton.Link
+            href="/profil"
+            label="Profil de contribution"
+            labelIcon={<CircleUserRound className="size-4" aria-hidden="true" />}
+          />
+        </UserButton.MenuItems>
+      </UserButton>
     </Show>
   )
+}
+
+/**
+ * Identifies the authenticated Clerk user in PostHog so that client-side
+ * sessions and server-side events can be correlated by the same distinct ID.
+ * Rendered only when Clerk is configured and inside the ClerkProvider.
+ */
+function PostHogUserIdentifier() {
+  const { isLoaded, isSignedIn, user } = useUser()
+  const posthog = usePostHog()
+
+  React.useEffect(() => {
+    if (!isLoaded || !posthog) return
+
+    if (isSignedIn && user) {
+      posthog.identify(user.id, {
+        credit_name:
+          (user.publicMetadata as { shootareas?: { creditName?: string } })
+            ?.shootareas?.creditName ?? undefined,
+      })
+    }
+  }, [isLoaded, isSignedIn, user?.id, posthog])
+
+  return null
 }

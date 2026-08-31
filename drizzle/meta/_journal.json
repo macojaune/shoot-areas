@@ -8,6 +8,13 @@
       "when": 1780764698330,
       "tag": "0000_black_william_stryker",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788153239664,
+      "tag": "0001_first_whizzer",
+      "breakpoints": true
     }
   ]
 }

@@ -3,11 +3,11 @@ import { Camera, MapPin } from "lucide-react"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
-import { SpotMedia } from "~/components/spot-media"
+import { isSocialUrl, SpotMedia } from "~/components/spot-media"
 import type { PlaceListItem } from "~/server/places"
 
 export function PlaceCard({ place }: { place: PlaceListItem }) {
-  const image = place.images[0]
+  const image = place.images.find((item) => !isSocialUrl(item.externalUrl))
 
   return (
     <Card className="flex h-full flex-col overflow-hidden">
@@ -27,7 +27,15 @@ export function PlaceCard({ place }: { place: PlaceListItem }) {
       <div className="flex grow flex-col gap-4 p-5">
         <div className="flex flex-wrap gap-2">
           {place.categories.slice(0, 3).map((category) => (
-            <Badge key={category.slug}>{category.title}</Badge>
+            <Badge
+              key={category.slug}
+              asChild
+              className="bg-lagoon/15 hover:bg-lagoon/30"
+            >
+              <Link to="/" search={{ category: category.slug }}>
+                {category.title}
+              </Link>
+            </Badge>
           ))}
         </div>
         <div className="space-y-2">

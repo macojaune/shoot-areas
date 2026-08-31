@@ -13,8 +13,19 @@ const contributorProfileSchema = z.object({
 })
 
 export type ContributorProfile = {
+  userId: string
   creditName: string
   creditUrl: string
+  imageUrl: string | null
+}
+
+export type ContributorUser = {
+  id: string
+  username: string | null
+  firstName: string | null
+  lastName: string | null
+  imageUrl: string
+  publicMetadata: unknown
 }
 
 type ClerkContributorMetadata = {
@@ -33,22 +44,19 @@ function defaultCreditName(user: {
   return user.username ? `@${user.username}` : fullName || "Contributeur·ice"
 }
 
-export function contributorProfileFromUser(user: {
-  username: string | null
-  firstName: string | null
-  lastName: string | null
-  publicMetadata: unknown
-}): ContributorProfile {
+export function contributorProfileFromUser(user: ContributorUser): ContributorProfile {
   const metadata = user.publicMetadata as ClerkContributorMetadata
   const profile = metadata.shootareas
 
   return {
+    userId: user.id,
     creditName:
       typeof profile?.creditName === "string" && profile.creditName.trim().length >= 2
         ? profile.creditName.trim()
         : defaultCreditName(user),
     creditUrl:
       typeof profile?.creditUrl === "string" ? profile.creditUrl.trim() : "",
+    imageUrl: user.imageUrl || null,
   }
 }
 
@@ -63,6 +71,26 @@ async function currentUserId() {
 export async function getContributorProfileForUser(userId: string) {
   const user = await clerkClient().users.getUser(userId)
   return contributorProfileFromUser(user)
+}
+
+export async function getContributorProfilesForUsers(userIds: string[]) {
+  const uniqueUserIds = [...new Set(userIds)]
+  const profiles = await Promise.all(
+    uniqueUserIds.map(async (userId) => {
+      try {
+        return await getContributorProfileForUser(userId)
+      } catch {
+        return {
+          userId,
+          creditName: "Spoteur·euse",
+          creditUrl: "",
+          imageUrl: null,
+        } satisfies ContributorProfile
+      }
+    })
+  )
+
+  return new Map(profiles.map((profile) => [profile.userId, profile]))
 }
 
 export const getCurrentContributorProfile = createServerFn({ method: "GET" }).handler(

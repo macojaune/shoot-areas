@@ -87,9 +87,32 @@ export const placeImages = sqliteTable(
   })
 )
 
+export const placeReviews = sqliteTable(
+  "place_reviews",
+  {
+    id: int("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    placeId: int("place_id")
+      .notNull()
+      .references(() => places.id, { onDelete: "cascade" }),
+    createdByClerkId: text("created_by_clerk_id").notNull(),
+    rating: int("rating").notNull(),
+    content: text("content").notNull(),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    placeIdx: index("place_reviews_place_idx").on(table.placeId),
+    uniqueUserReview: uniqueIndex("place_reviews_unique_user_idx").on(
+      table.placeId,
+      table.createdByClerkId
+    ),
+  })
+)
+
 export const placesRelations = relations(places, ({ many }) => ({
   categories: many(categoriesToPlaces),
   images: many(placeImages),
+  reviews: many(placeReviews),
 }))
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
@@ -117,6 +140,14 @@ export const placeImagesRelations = relations(placeImages, ({ one }) => ({
   }),
 }))
 
+export const placeReviewsRelations = relations(placeReviews, ({ one }) => ({
+  place: one(places, {
+    fields: [placeReviews.placeId],
+    references: [places.id],
+  }),
+}))
+
 export type Place = typeof places.$inferSelect
 export type PlaceImage = typeof placeImages.$inferSelect
+export type PlaceReview = typeof placeReviews.$inferSelect
 export type Category = typeof categories.$inferSelect

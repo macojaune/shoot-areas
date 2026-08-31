@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useServerFn } from "@tanstack/react-start"
+import { usePostHog } from "@posthog/react"
 import * as React from "react"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
@@ -19,6 +20,7 @@ export const Route = createFileRoute("/profil")({
 
 function ProfilePage() {
   const profile = Route.useLoaderData()
+  const posthog = usePostHog()
   const updateProfile = useServerFn(updateCurrentContributorProfile)
   const [creditName, setCreditName] = React.useState(profile.creditName)
   const [creditUrl, setCreditUrl] = React.useState(profile.creditUrl)
@@ -49,11 +51,15 @@ function ProfilePage() {
               data: { creditName, creditUrl },
             })
               .then((nextProfile) => {
+                posthog.capture('profile_updated', {
+                  has_credit_url: Boolean(nextProfile.creditUrl),
+                })
                 setCreditName(nextProfile.creditName)
                 setCreditUrl(nextProfile.creditUrl)
                 setStatus("saved")
               })
               .catch((profileError) => {
+                posthog.captureException(profileError)
                 setStatus("error")
                 setError(
                   profileError instanceof Error

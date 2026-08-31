@@ -1,9 +1,24 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { ArrowLeft, ExternalLink, MapPin, Navigation } from "lucide-react"
+import {
+  ArrowLeft,
+  Building2,
+  ExternalLink,
+  MapPinned,
+  MapPin,
+  Navigation,
+  Tag,
+} from "lucide-react"
+import { usePostHog } from "@posthog/react"
+import * as React from "react"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
 import { SpotMedia } from "~/components/spot-media"
+import {
+  ContributorIdentity,
+  RatingSummary,
+  SpotReviews,
+} from "~/components/spot-reviews"
 import { navigationUrl } from "~/lib/utils"
 import { getPlaceBySlug } from "~/server/places"
 
@@ -17,6 +32,22 @@ export const Route = createFileRoute("/lieux/$slug")({
 
 function PlacePage() {
   const { place } = Route.useLoaderData()
+  const posthog = usePostHog()
+
+  // Capture spot_viewed once when the component mounts (top of the funnel)
+  React.useEffect(() => {
+    if (!place) return
+    posthog.capture('spot_viewed', {
+      spot_slug: place.slug,
+      spot_country: place.country,
+      spot_city: place.city,
+      category_count: place.categories.length,
+      has_location: place.latitude !== null && place.longitude !== null,
+      review_count: place.reviewCount,
+    })
+    // We intentionally run this only once on mount — a pageview-style event
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   if (!place) {
     return (
@@ -41,14 +72,46 @@ function PlacePage() {
         </Link>
       </Button>
 
-      <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_420px]">
+      <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
         <section className="grid gap-6">
-          <div className="flex flex-wrap gap-2">
-            <Badge>{place.country}</Badge>
-            <Badge>{place.city}</Badge>
-            {place.categories.map((category) => (
-              <Badge key={category.slug}>{category.title}</Badge>
-            ))}
+          <div className="grid gap-3">
+            <div className="flex flex-wrap items-center gap-2" aria-label="Localisation">
+              <span className="mr-1 inline-flex items-center gap-1.5 text-sm font-bold text-muted">
+                <MapPinned className="size-4" aria-hidden="true" />
+                Région
+              </span>
+              <Badge asChild className="hover:bg-paper">
+                <Link to="/" search={{ country: place.country }}>
+                  <MapPinned className="size-3.5" aria-hidden="true" />
+                  {place.country}
+                </Link>
+              </Badge>
+              <Badge asChild className="hover:bg-paper">
+                <Link to="/" search={{ country: place.country, city: place.city }}>
+                  <Building2 className="size-3.5" aria-hidden="true" />
+                  {place.city}
+                </Link>
+              </Badge>
+            </div>
+            {place.categories.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-2" aria-label="Catégories">
+                <span className="mr-1 inline-flex items-center gap-1.5 text-sm font-bold text-muted">
+                  <Tag className="size-4" aria-hidden="true" />
+                  Catégories
+                </span>
+                {place.categories.map((category) => (
+                  <Badge
+                    key={category.slug}
+                    asChild
+                    className="bg-lagoon/15 hover:bg-lagoon/30"
+                  >
+                    <Link to="/" search={{ category: category.slug }}>
+                      {category.title}
+                    </Link>
+                  </Badge>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           <div className="space-y-4">
@@ -61,8 +124,24 @@ function PlacePage() {
             </p>
           </div>
 
-          <Card className="p-6">
-            <h2 className="section-title text-2xl">Tips de l'éclaireur·euse</h2>
+          <div className="flex flex-wrap items-center justify-between gap-4 border-y border-line py-5">
+            <p className="font-semibold text-muted">
+              Repéré par la communauté, enrichi sur le terrain.
+            </p>
+            <RatingSummary
+              averageRating={place.averageRating}
+              reviewCount={place.reviewCount}
+            />
+          </div>
+
+          <Card className="grid gap-5 p-6">
+            <div className="flex flex-wrap items-start justify-between gap-5">
+              <div>
+                <h2 className="section-title text-2xl">L’avis de l’éclaireur·euse</h2>
+                <p className="mt-2 text-muted">Le premier repérage, avant ton passage.</p>
+              </div>
+              <ContributorIdentity contributor={place.creator} label="Éclaireur·euse" />
+            </div>
             <p className="mt-4 whitespace-pre-wrap text-lg leading-8">
               {place.description}
             </p>
@@ -82,12 +161,30 @@ function PlacePage() {
             <InfoBlock title="Accès et terrain" content={place.accessNotes} />
             <InfoBlock title="Meilleure période" content={place.bestPeriod} />
           </div>
+
+          <SpotReviews
+            placeId={place.id}
+            reviews={place.reviews}
+            averageRating={place.averageRating}
+            reviewCount={place.reviewCount}
+          />
         </section>
 
         <aside className="grid h-fit gap-4">
           {navUrl ? (
             <Button asChild size="lg" variant="secondary" className="w-full">
-              <a href={navUrl} target="_blank" rel="noreferrer">
+              <a
+                href={navUrl}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() =>
+                  posthog.capture('spot_navigation_clicked', {
+                    spot_slug: place.slug,
+                    spot_country: place.country,
+                    spot_city: place.city,
+                  })
+                }
+              >
                 <Navigation className="h-5 w-5" aria-hidden="true" />
                 Y aller
               </a>
@@ -95,6 +192,12 @@ function PlacePage() {
           ) : null}
 
           <div className="grid gap-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="section-title text-3xl">Galerie</h2>
+              <span className="text-sm font-semibold text-muted">
+                {place.images.length} image{place.images.length > 1 ? "s" : ""}
+              </span>
+            </div>
             {place.images.length > 0 ? (
               place.images.map((image) => (
                 <Card key={image.id} className="overflow-hidden">
@@ -144,7 +247,7 @@ function Metric({ title, value }: { title: string; value: string }) {
       <p className="text-sm font-semibold uppercase tracking-normal text-muted">
         {title}
       </p>
-      <p className="section-title mt-3 text-3xl">{value}</p>
+      <p className="section-title mt-3 break-words text-3xl">{value}</p>
     </Card>
   )
 }

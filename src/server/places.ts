@@ -4,7 +4,9 @@ import {
   type Category,
   type Place,
   type PlaceImage,
+  type PlaceReview,
 } from "~/server/db/schema"
+import type { ContributorProfile } from "~/server/contributor"
 
 const imageInputSchema = z.object({
   externalUrl: z.string().url("L'URL de l'image est invalide").optional().or(z.literal("")),
@@ -38,10 +40,43 @@ export type PlaceListItem = Place & {
   categories: Category[]
 }
 
-export const listPlaces = createServerFn({ method: "GET" }).handler(async () => {
-  const { listPlacesHandler } = await import("~/server/places.server")
-  return listPlacesHandler()
+export const listPlacesFilterSchema = z.object({
+  category: z.string().trim().min(1).optional(),
+  country: z.string().trim().min(1).optional(),
+  city: z.string().trim().min(1).optional(),
 })
+
+export type ListPlacesFilter = z.infer<typeof listPlacesFilterSchema>
+
+export type PlaceReviewWithContributor = PlaceReview & {
+  contributor: ContributorProfile
+}
+
+export type PlaceDetail = PlaceListItem & {
+  creator: ContributorProfile
+  reviews: PlaceReviewWithContributor[]
+  averageRating: number | null
+  reviewCount: number
+}
+
+export const createSpotReviewInputSchema = z.object({
+  placeId: z.number().int().positive(),
+  rating: z.number().int().min(1).max(5),
+  content: z
+    .string()
+    .trim()
+    .min(12, "Partage au moins quelques détails utiles.")
+    .max(1000, "L'avis ne peut pas dépasser 1 000 caractères."),
+})
+
+export type CreateSpotReviewInput = z.infer<typeof createSpotReviewInputSchema>
+
+export const listPlaces = createServerFn({ method: "GET" })
+  .inputValidator((input: unknown) => listPlacesFilterSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { listPlacesHandler } = await import("~/server/places.server")
+    return listPlacesHandler(data)
+  })
 
 export const listCategories = createServerFn({ method: "GET" }).handler(
   async () => {
@@ -62,4 +97,11 @@ export const createPlace = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { createPlaceHandler } = await import("~/server/places.server")
     return createPlaceHandler(data)
+  })
+
+export const createSpotReview = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => createSpotReviewInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { createSpotReviewHandler } = await import("~/server/places.server")
+    return createSpotReviewHandler(data)
   })

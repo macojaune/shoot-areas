@@ -1,7 +1,8 @@
 import { useForm } from "@tanstack/react-form"
 import { useRouter } from "@tanstack/react-router"
 import { useServerFn } from "@tanstack/react-start"
-import { Plus, Trash2, Upload } from "lucide-react"
+import { usePostHog } from "@posthog/react"
+import { MapPin, Plus, Trash2, Upload } from "lucide-react"
 import * as React from "react"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
@@ -55,6 +56,7 @@ export function PlaceForm({
   contributorProfile: ContributorProfile
 }) {
   const router = useRouter()
+  const posthog = usePostHog()
   const submitPlace = useServerFn(createPlace)
   const requestImageUpload = useServerFn(createImageUpload)
   const [selectedCategories, setSelectedCategories] = React.useState<string[]>([])
@@ -72,6 +74,10 @@ export function PlaceForm({
   const [uploadingImageIndex, setUploadingImageIndex] = React.useState<number | null>(
     null
   )
+  const [locationStatus, setLocationStatus] = React.useState<
+    "idle" | "locating" | "success" | "error"
+  >("idle")
+  const [locationMessage, setLocationMessage] = React.useState("")
   const fileInputs = React.useRef<Record<number, HTMLInputElement | null>>({})
 
   const form = useForm({
@@ -120,6 +126,7 @@ export function PlaceForm({
         const place = await submitPlace({ data: payload })
         await router.navigate({ to: "/lieux/$slug", params: { slug: place.slug } })
       } catch (error) {
+        posthog.captureException(error)
         setSubmitError(
           error instanceof Error
             ? error.message
@@ -142,6 +149,35 @@ export function PlaceForm({
       current.map((image, imageIndex) =>
         imageIndex === index ? { ...image, [field]: value } : image
       )
+    )
+  }
+
+  function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      setLocationStatus("error")
+      setLocationMessage("La géolocalisation n'est pas disponible sur cet appareil.")
+      return
+    }
+
+    setLocationStatus("locating")
+    setLocationMessage("Recherche de ta position...")
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        form.setFieldValue("latitude", position.coords.latitude.toFixed(6))
+        form.setFieldValue("longitude", position.coords.longitude.toFixed(6))
+        setLocationStatus("success")
+        setLocationMessage("Position ajoutée. Ajuste-la si le spot est un peu plus loin.")
+      },
+      (error) => {
+        setLocationStatus("error")
+        setLocationMessage(
+          error.code === error.PERMISSION_DENIED
+            ? "Autorise la géolocalisation pour utiliser ta position actuelle."
+            : "La position n'a pas pu être récupérée. Tu peux saisir les coordonnées manuellement."
+        )
+      },
+      { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 }
     )
   }
 
@@ -168,6 +204,11 @@ export function PlaceForm({
       }
 
       updateImage(index, "externalUrl", publicUrl)
+      posthog.capture('image_uploaded', {
+        image_index: index,
+        file_type: file.type,
+        file_size_kb: Math.round(file.size / 1024),
+      })
     } catch (error) {
       setUploadError(
         error instanceof Error ? error.message : "L'image n'a pas pu être envoyée."
@@ -301,6 +342,82 @@ export function PlaceForm({
             </div>
           )}
         </form.Field>
+
+        <div className="grid gap-4 border-y border-line py-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="section-title text-xl">Localisation précise</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+                Ajoute le point du spot pour qu’il apparaisse sur la carte. Tu peux
+                utiliser ta position actuelle ou coller des coordonnées depuis Maps.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={locationStatus === "locating"}
+              onClick={useCurrentLocation}
+            >
+              <MapPin className="h-4 w-4" aria-hidden="true" />
+              {locationStatus === "locating" ? "Localisation..." : "Utiliser ma position"}
+            </Button>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            <form.Field name="latitude">
+              {(field) => (
+                <div className="grid gap-2">
+                  <Label htmlFor={field.name}>Latitude</Label>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="number"
+                    inputMode="decimal"
+                    step="any"
+                    min="-90"
+                    max="90"
+                    value={field.state.value}
+                    placeholder="16.2418"
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                  />
+                </div>
+              )}
+            </form.Field>
+            <form.Field name="longitude">
+              {(field) => (
+                <div className="grid gap-2">
+                  <Label htmlFor={field.name}>Longitude</Label>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="number"
+                    inputMode="decimal"
+                    step="any"
+                    min="-180"
+                    max="180"
+                    value={field.state.value}
+                    placeholder="-61.5329"
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                  />
+                </div>
+              )}
+            </form.Field>
+          </div>
+          <p
+            className={
+              locationStatus === "error"
+                ? "min-h-5 text-sm font-semibold text-clay"
+                : locationStatus === "success"
+                  ? "min-h-5 text-sm font-semibold text-lagoon"
+                  : "min-h-5 text-sm font-semibold text-muted"
+            }
+            aria-live="polite"
+          >
+            {locationMessage || "Optionnel, mais utile pour les repérages à proximité."}
+          </p>
+        </div>
 
         <form.Field
           name="description"
