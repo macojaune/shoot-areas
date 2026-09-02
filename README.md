@@ -50,6 +50,7 @@ l'environnement local et dans Coolify :
 - `R2_SECRET_ACCESS_KEY`
 - `R2_BUCKET=shootareas-media`
 - `R2_PUBLIC_URL`
+- `META_APP_ACCESS_TOKEN` (optionnel, pour l'aperçu des nouveaux posts Instagram)
 
 Crée une paire de clés S3 R2 limitée à la lecture et l'écriture des objets du
 bucket `shootareas-media`. La politique CORS utilisée par le bucket est versionnée

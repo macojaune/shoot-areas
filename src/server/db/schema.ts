@@ -77,6 +77,7 @@ export const placeImages = sqliteTable(
       .notNull()
       .references(() => places.id, { onDelete: "cascade" }),
     externalUrl: text("external_url").notNull(),
+    previewUrl: text("preview_url"),
     creditName: text("credit_name").notNull(),
     creditUrl: text("credit_url"),
     caption: text("caption"),
@@ -97,6 +98,12 @@ export const placeReviews = sqliteTable(
     createdByClerkId: text("created_by_clerk_id").notNull(),
     rating: int("rating").notNull(),
     content: text("content").notNull(),
+    accessNotes: text("access_notes"),
+    bestLight: text("best_light"),
+    bestPeriod: text("best_period"),
+    accessibilityLevel: int("accessibility_level"),
+    crowdLevel: int("crowd_level"),
+    isPublicPlace: int("is_public_place", { mode: "boolean" }),
     createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   },
@@ -106,6 +113,25 @@ export const placeReviews = sqliteTable(
       table.placeId,
       table.createdByClerkId
     ),
+  })
+)
+
+export const placeReviewImages = sqliteTable(
+  "place_review_images",
+  {
+    id: int("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    reviewId: int("review_id")
+      .notNull()
+      .references(() => placeReviews.id, { onDelete: "cascade" }),
+    externalUrl: text("external_url").notNull(),
+    previewUrl: text("preview_url"),
+    creditName: text("credit_name").notNull(),
+    creditUrl: text("credit_url"),
+    caption: text("caption"),
+    sortOrder: int("sort_order").notNull().default(0),
+  },
+  (table) => ({
+    reviewIdx: index("place_review_images_review_idx").on(table.reviewId),
   })
 )
 
@@ -183,9 +209,17 @@ export const placeReviewsRelations = relations(placeReviews, ({ one }) => ({
   }),
 }))
 
+export const placeReviewImagesRelations = relations(placeReviewImages, ({ one }) => ({
+  review: one(placeReviews, {
+    fields: [placeReviewImages.reviewId],
+    references: [placeReviews.id],
+  }),
+}))
+
 export type Place = typeof places.$inferSelect
 export type PlaceImage = typeof placeImages.$inferSelect
 export type PlaceReview = typeof placeReviews.$inferSelect
+export type PlaceReviewImage = typeof placeReviewImages.$inferSelect
 export type Category = typeof categories.$inferSelect
 export type ContributorProfileRecord = typeof contributorProfiles.$inferSelect
 export type PlaceFavorite = typeof placeFavorites.$inferSelect

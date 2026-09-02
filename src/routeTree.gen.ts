@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SpotsRouteImport } from './routes/spots'
 import { Route as ProfilRouteImport } from './routes/profil'
 import { Route as NouveauLieuRouteImport } from './routes/nouveau-lieu'
 import { Route as MentionsLegalesRouteImport } from './routes/mentions-legales'
@@ -19,6 +20,11 @@ import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
 import { Route as LieuxSlugRouteImport } from './routes/lieux/$slug'
 import { Route as EclaireursUserIdRouteImport } from './routes/eclaireurs/$userId'
 
+const SpotsRoute = SpotsRouteImport.update({
+  id: '/spots',
+  path: '/spots',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfilRoute = ProfilRouteImport.update({
   id: '/profil',
   path: '/profil',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/mentions-legales': typeof MentionsLegalesRoute
   '/nouveau-lieu': typeof NouveauLieuRoute
   '/profil': typeof ProfilRoute
+  '/spots': typeof SpotsRoute
   '/eclaireurs/$userId': typeof EclaireursUserIdRoute
   '/lieux/$slug': typeof LieuxSlugRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/mentions-legales': typeof MentionsLegalesRoute
   '/nouveau-lieu': typeof NouveauLieuRoute
   '/profil': typeof ProfilRoute
+  '/spots': typeof SpotsRoute
   '/eclaireurs/$userId': typeof EclaireursUserIdRoute
   '/lieux/$slug': typeof LieuxSlugRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/mentions-legales': typeof MentionsLegalesRoute
   '/nouveau-lieu': typeof NouveauLieuRoute
   '/profil': typeof ProfilRoute
+  '/spots': typeof SpotsRoute
   '/eclaireurs/$userId': typeof EclaireursUserIdRoute
   '/lieux/$slug': typeof LieuxSlugRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/mentions-legales'
     | '/nouveau-lieu'
     | '/profil'
+    | '/spots'
     | '/eclaireurs/$userId'
     | '/lieux/$slug'
     | '/sign-in/$'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/mentions-legales'
     | '/nouveau-lieu'
     | '/profil'
+    | '/spots'
     | '/eclaireurs/$userId'
     | '/lieux/$slug'
     | '/sign-in/$'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/mentions-legales'
     | '/nouveau-lieu'
     | '/profil'
+    | '/spots'
     | '/eclaireurs/$userId'
     | '/lieux/$slug'
     | '/sign-in/$'
@@ -141,6 +153,7 @@ export interface RootRouteChildren {
   MentionsLegalesRoute: typeof MentionsLegalesRoute
   NouveauLieuRoute: typeof NouveauLieuRoute
   ProfilRoute: typeof ProfilRoute
+  SpotsRoute: typeof SpotsRoute
   EclaireursUserIdRoute: typeof EclaireursUserIdRoute
   LieuxSlugRoute: typeof LieuxSlugRoute
   SignInSplatRoute: typeof SignInSplatRoute
@@ -149,6 +162,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/spots': {
+      id: '/spots'
+      path: '/spots'
+      fullPath: '/spots'
+      preLoaderRoute: typeof SpotsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profil': {
       id: '/profil'
       path: '/profil'
@@ -221,6 +241,7 @@ const rootRouteChildren: RootRouteChildren = {
   MentionsLegalesRoute: MentionsLegalesRoute,
   NouveauLieuRoute: NouveauLieuRoute,
   ProfilRoute: ProfilRoute,
+  SpotsRoute: SpotsRoute,
   EclaireursUserIdRoute: EclaireursUserIdRoute,
   LieuxSlugRoute: LieuxSlugRoute,
   SignInSplatRoute: SignInSplatRoute,

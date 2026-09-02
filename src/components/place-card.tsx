@@ -3,20 +3,21 @@ import { Camera, MapPin } from "lucide-react"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
-import { isSocialUrl, SpotMedia } from "~/components/spot-media"
+import { isSocialUrl } from "~/components/spot-media"
 import type { PlaceListItem } from "~/server/places"
 
 export function PlaceCard({ place }: { place: PlaceListItem }) {
-  const image = place.images.find((item) => !isSocialUrl(item.externalUrl))
+  const image = selectThumbnail(place)
 
   return (
     <Card className="flex h-full flex-col overflow-hidden">
       <div className="relative aspect-[4/3] border-b border-line bg-lagoon/20">
         {image ? (
-          <SpotMedia
-            url={image.externalUrl}
+          <img
+            src={image.previewUrl || image.externalUrl}
             alt={image.caption || place.title}
             className="h-full w-full object-cover"
+            loading="lazy"
           />
         ) : (
           <div className="flex h-full items-center justify-center bg-paper">
@@ -32,7 +33,7 @@ export function PlaceCard({ place }: { place: PlaceListItem }) {
               asChild
               className="bg-lagoon/15 hover:bg-lagoon/30"
             >
-              <Link to="/" search={{ category: category.slug }}>
+              <Link to="/spots" search={{ category: category.slug }}>
                 {category.title}
               </Link>
             </Badge>
@@ -56,4 +57,16 @@ export function PlaceCard({ place }: { place: PlaceListItem }) {
       </div>
     </Card>
   )
+}
+
+function selectThumbnail(place: PlaceListItem) {
+  const candidates = place.images.filter(
+    (image) => image.previewUrl || !isSocialUrl(image.externalUrl)
+  )
+  if (candidates.length === 0) return null
+
+  const seed = `${place.id}:${place.images.length}`
+    .split("")
+    .reduce((total, character) => total + character.charCodeAt(0), 0)
+  return candidates[seed % candidates.length]
 }

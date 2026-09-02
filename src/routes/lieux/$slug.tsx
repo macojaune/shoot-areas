@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import {
   ArrowLeft,
   Building2,
-  ExternalLink,
+  ImageOff,
   MapPinned,
   MapPin,
   Navigation,
@@ -14,7 +14,8 @@ import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
 import { FavoriteButton } from "~/components/favorite-button"
-import { SpotMedia } from "~/components/spot-media"
+import { SpotGallery } from "~/components/spot-gallery"
+import { isSocialUrl } from "~/components/spot-media"
 import {
   ContributorIdentity,
   RatingSummary,
@@ -82,13 +83,13 @@ function PlacePage() {
                 Région
               </span>
               <Badge asChild className="hover:bg-paper">
-                <Link to="/" search={{ country: place.country }}>
+                <Link to="/spots" search={{ country: place.country }}>
                   <MapPinned className="size-3.5" aria-hidden="true" />
                   {place.country}
                 </Link>
               </Badge>
               <Badge asChild className="hover:bg-paper">
-                <Link to="/" search={{ country: place.country, city: place.city }}>
+                <Link to="/spots" search={{ country: place.country, city: place.city }}>
                   <Building2 className="size-3.5" aria-hidden="true" />
                   {place.city}
                 </Link>
@@ -106,7 +107,7 @@ function PlacePage() {
                     asChild
                     className="bg-lagoon/15 hover:bg-lagoon/30"
                   >
-                    <Link to="/" search={{ category: category.slug }}>
+                      <Link to="/spots" search={{ category: category.slug }}>
                       {category.title}
                     </Link>
                   </Badge>
@@ -199,42 +200,35 @@ function PlacePage() {
 
           <div className="grid gap-4">
             <div className="flex items-baseline justify-between gap-3">
-              <h2 className="section-title text-3xl">Galerie</h2>
+              <h2 className="section-title text-3xl">La galerie</h2>
               <span className="text-sm font-semibold text-muted">
                 {place.images.length} image{place.images.length > 1 ? "s" : ""}
               </span>
             </div>
             {place.images.length > 0 ? (
-              place.images.map((image) => (
-                <Card key={image.id} className="overflow-hidden">
-                  <SpotMedia
-                    url={image.externalUrl}
-                    alt={image.caption || place.title}
-                    className="w-full object-cover"
-                    variant="embed"
-                  />
-                  <div className="space-y-2 border-t border-line p-4">
-                    {image.caption ? (
-                      <p className="font-semibold">{image.caption}</p>
-                    ) : null}
-                    {image.creditUrl ? (
-                      <a
-                        href={image.creditUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-2 text-sm font-bold text-clay"
-                      >
-                        {image.creditName}
-                        <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                      </a>
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  {place.images.slice(0, 4).map((image) => {
+                    const thumbnail = image.previewUrl || (!isSocialUrl(image.externalUrl) ? image.externalUrl : null)
+                    return thumbnail ? (
+                      <img
+                        key={image.id}
+                        src={thumbnail}
+                        alt=""
+                        className="aspect-square w-full object-cover"
+                        loading="lazy"
+                      />
                     ) : (
-                      <p className="text-sm font-semibold text-muted">
-                        Crédit : {image.creditName}
-                      </p>
-                    )}
-                  </div>
-                </Card>
-              ))
+                      <div key={image.id} className="grid aspect-square place-items-center bg-paper text-muted">
+                        <ImageOff className="size-5" aria-hidden="true" />
+                      </div>
+                    )
+                  })}
+                </div>
+                <Button asChild variant="outline" className="w-full">
+                  <a href="#galerie">Voir toute la galerie</a>
+                </Button>
+              </>
             ) : (
               <Card className="p-6 text-center text-muted">
                 Aucune image créditée pour ce spot.
@@ -243,6 +237,21 @@ function PlacePage() {
           </div>
         </aside>
       </div>
+
+      <section id="galerie" className="mt-12 border-t border-line pt-10" aria-labelledby="gallery-title">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 id="gallery-title" className="section-title text-4xl">Images du spot</h2>
+            <p className="mt-2 text-muted">Les rendus apportés par les éclaireur·euses et les spoteur·euses.</p>
+          </div>
+          <span className="text-sm font-bold text-muted">{place.images.length} image{place.images.length > 1 ? "s" : ""}</span>
+        </div>
+        {place.images.length > 0 ? (
+          <SpotGallery images={place.images} title={place.title} />
+        ) : (
+          <Card className="p-6 text-center text-muted">La galerie s’enrichira avec les prochains passages.</Card>
+        )}
+      </section>
     </main>
   )
 }

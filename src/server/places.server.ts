@@ -5,7 +5,7 @@ import { slugify } from "~/lib/utils"
 import {
   getContributorProfileForUser,
   getContributorProfilesForUsers,
-} from "~/server/contributor"
+} from "~/server/contributor.server"
 import { db } from "~/server/db/client"
 import {
   categories,
@@ -13,11 +13,12 @@ import {
   placeFavorites,
   placeImages,
   placeReviews,
+  placeReviewImages,
   places,
   type Category,
   type Place,
-  type PlaceImage,
 } from "~/server/db/schema"
+import { resolveMediaPreview } from "~/server/media-preview"
 import type {
   CreatePlaceInput,
   CreateSpotReviewInput,
@@ -25,6 +26,7 @@ import type {
   PlaceDetail,
   ProfileDashboard,
   PlaceListItem,
+  SpotImage,
 } from "~/server/places"
 
 async function getUniqueSlug(title: string) {
@@ -49,12 +51,18 @@ export async function hydratePlaces(rows: Place[]): Promise<PlaceListItem[]> {
   if (rows.length === 0) return []
   const placeIds = rows.map((place) => place.id)
 
-  const [images, categoryLinks] = await Promise.all([
+  const [images, reviewImageLinks, categoryLinks] = await Promise.all([
     db
       .select()
       .from(placeImages)
       .where(inArray(placeImages.placeId, placeIds))
       .orderBy(placeImages.sortOrder),
+    db
+      .select({ image: placeReviewImages, review: placeReviews })
+      .from(placeReviewImages)
+      .innerJoin(placeReviews, eq(placeReviews.id, placeReviewImages.reviewId))
+      .where(inArray(placeReviews.placeId, placeIds))
+      .orderBy(desc(placeReviews.createdAt), placeReviewImages.sortOrder),
     db
       .select({
         placeId: categoriesToPlaces.placeId,
@@ -65,13 +73,31 @@ export async function hydratePlaces(rows: Place[]): Promise<PlaceListItem[]> {
       .where(inArray(categoriesToPlaces.placeId, placeIds)),
   ])
 
-  return rows.map((place) => ({
-    ...place,
-    images: images.filter((image) => image.placeId === place.id),
-    categories: categoryLinks
-      .filter((link) => link.placeId === place.id)
-      .map((link) => link.category),
-  }))
+  return rows.map((place) => {
+    const baseImages: SpotImage[] = images
+      .filter((image) => image.placeId === place.id)
+      .map((image) => ({
+        ...image,
+        id: `spot-${image.id}`,
+        contributorId: place.createdByClerkId,
+      }))
+    const contributionImages: SpotImage[] = reviewImageLinks
+      .filter((entry) => entry.review.placeId === place.id)
+      .map(({ image, review }) => ({
+        ...image,
+        id: `contribution-${image.id}`,
+        placeId: review.placeId,
+        contributorId: review.createdByClerkId,
+      }))
+
+    return {
+      ...place,
+      images: [...baseImages, ...contributionImages],
+      categories: categoryLinks
+        .filter((link) => link.placeId === place.id)
+        .map((link) => link.category),
+    }
+  })
 }
 
 export async function listPlacesHandler(filters: ListPlacesFilter = {}) {
@@ -82,16 +108,39 @@ export async function listPlacesHandler(filters: ListPlacesFilter = {}) {
     .limit(24)
 
   const hydratedPlaces = await hydratePlaces(rows)
-
-  return hydratedPlaces.filter((place) => {
+  const query = filters.query?.toLocaleLowerCase("fr")
+  const filteredPlaces = hydratedPlaces.filter((place) => {
     const matchesCategory =
       !filters.category ||
       place.categories.some((category) => category.slug === filters.category)
     const matchesCountry = !filters.country || place.country === filters.country
     const matchesCity = !filters.city || place.city === filters.city
+    const matchesQuery =
+      !query ||
+      [place.title, place.description, place.country, place.city, place.address]
+        .filter(Boolean)
+        .some((value) => value?.toLocaleLowerCase("fr").includes(query))
 
-    return matchesCategory && matchesCountry && matchesCity
+    return matchesCategory && matchesCountry && matchesCity && matchesQuery
   })
+
+  if (filters.sort === "images") {
+    return filteredPlaces.sort((left, right) => right.images.length - left.images.length)
+  }
+
+  if (filters.sort === "rating") {
+    const ratingRows = await db
+      .select({
+        placeId: placeReviews.placeId,
+        average: sql<number>`avg(${placeReviews.rating})`,
+      })
+      .from(placeReviews)
+      .groupBy(placeReviews.placeId)
+    const ratings = new Map(ratingRows.map((row) => [row.placeId, Number(row.average)]))
+    return filteredPlaces.sort((left, right) => (ratings.get(right.id) ?? 0) - (ratings.get(left.id) ?? 0))
+  }
+
+  return filteredPlaces
 }
 
 export async function listCategoriesHandler(): Promise<Category[]> {
@@ -108,13 +157,19 @@ export async function getPlaceBySlugHandler(data: { slug: string }) {
   const [place] = await hydratePlaces(rows)
   if (!place) return null
 
-  const [{ userId: viewerId }, reviews] = await Promise.all([
+  const [{ userId: viewerId }, reviews, reviewImageLinks] = await Promise.all([
     auth(),
     db
       .select()
       .from(placeReviews)
       .where(eq(placeReviews.placeId, place.id))
       .orderBy(desc(placeReviews.createdAt)),
+    db
+      .select({ image: placeReviewImages, review: placeReviews })
+      .from(placeReviewImages)
+      .innerJoin(placeReviews, eq(placeReviews.id, placeReviewImages.reviewId))
+      .where(eq(placeReviews.placeId, place.id))
+      .orderBy(placeReviewImages.sortOrder),
   ])
   const contributors = await getContributorProfilesForUsers([
     place.createdByClerkId,
@@ -145,6 +200,9 @@ export async function getPlaceBySlugHandler(data: { slug: string }) {
     reviews: reviews.map((review) => ({
       ...review,
       contributor: contributors.get(review.createdByClerkId) ?? creator,
+      images: reviewImageLinks
+        .filter((entry) => entry.review.id === review.id)
+        .map((entry) => entry.image),
     })),
     averageRating,
     reviewCount,
@@ -159,15 +217,16 @@ export async function createPlaceHandler(data: CreatePlaceInput) {
   }
 
   const contributorProfile = await getContributorProfileForUser(userId)
-  const cleanImages = data.images
+  const cleanImages = await Promise.all(data.images
     .filter((image) => image.externalUrl)
-    .map((image, index) => ({
+    .map(async (image, index) => ({
       externalUrl: image.externalUrl as string,
+      previewUrl: await resolveMediaPreview(image.externalUrl as string),
       creditName: image.creditName?.trim() || contributorProfile.creditName,
       creditUrl: image.creditUrl || contributorProfile.creditUrl || null,
       caption: image.caption || null,
       sortOrder: index,
-    }))
+    })))
 
   const slug = await getUniqueSlug(data.title)
 
@@ -277,11 +336,36 @@ export async function createSpotReviewHandler(data: CreateSpotReviewInput) {
       createdByClerkId: userId,
       rating: data.rating,
       content: data.content,
+      accessNotes: data.accessNotes || null,
+      bestLight: data.bestLight || null,
+      bestPeriod: data.bestPeriod || null,
+      accessibilityLevel: data.accessibilityLevel,
+      crowdLevel: data.crowdLevel,
+      isPublicPlace: data.isPublicPlace,
       updatedAt: sql`CURRENT_TIMESTAMP`,
     })
     .returning()
 
   if (!review) throw new Error("L'avis n'a pas pu être publié.")
+
+  const contributorProfile = await getContributorProfileForUser(userId)
+  const reviewImages = await Promise.all(
+    data.images
+      .filter((image) => image.externalUrl)
+      .map(async (image, index) => ({
+        reviewId: review.id,
+        externalUrl: image.externalUrl as string,
+        previewUrl: await resolveMediaPreview(image.externalUrl as string),
+        creditName: contributorProfile.creditName,
+        creditUrl: contributorProfile.creditUrl || null,
+        caption: image.caption || null,
+        sortOrder: index,
+      }))
+  )
+
+  if (reviewImages.length > 0) {
+    await db.insert(placeReviewImages).values(reviewImages)
+  }
 
   const posthog = getPostHogClient()
   if (posthog) {
@@ -292,6 +376,15 @@ export async function createSpotReviewHandler(data: CreateSpotReviewInput) {
         place_id: data.placeId,
         rating: data.rating,
         content_length: data.content.length,
+        image_count: reviewImages.length,
+        has_observation: Boolean(
+          data.accessNotes ||
+            data.bestLight ||
+            data.bestPeriod ||
+            data.accessibilityLevel ||
+            data.crowdLevel ||
+            data.isPublicPlace !== null
+        ),
       },
     })
     await posthog.flush()

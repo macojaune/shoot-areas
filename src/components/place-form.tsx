@@ -6,6 +6,7 @@ import { MapPin, Plus, Trash2, Upload } from "lucide-react"
 import * as React from "react"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
+import { LocationPicker } from "~/components/interactive-map"
 import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
 import { Textarea } from "~/components/ui/textarea"
@@ -405,6 +406,25 @@ export function PlaceForm({
               )}
             </form.Field>
           </div>
+          <form.Subscribe
+            selector={(state) => ({
+              latitude: state.values.latitude,
+              longitude: state.values.longitude,
+            })}
+          >
+            {({ latitude, longitude }) => (
+              <LocationPicker
+                latitude={latitude === "" ? null : Number(latitude)}
+                longitude={longitude === "" ? null : Number(longitude)}
+                onChange={({ latitude: nextLatitude, longitude: nextLongitude }) => {
+                  form.setFieldValue("latitude", String(nextLatitude))
+                  form.setFieldValue("longitude", String(nextLongitude))
+                  setLocationStatus("success")
+                  setLocationMessage("Repère placé sur la carte.")
+                }}
+              />
+            )}
+          </form.Subscribe>
           <p
             className={
               locationStatus === "error"
