@@ -381,12 +381,14 @@ function ReviewForm({ placeId }: { placeId: number }) {
           />
           <ObservationSelect label="Affluence" value={crowdLevel} onChange={setCrowdLevel} />
           <fieldset className="grid gap-2">
-            <legend className="text-sm font-bold">Type d'accès</legend>
-            <div className="flex gap-2">
+            <legend className="sr-only">Type d'accès</legend>
+            <p className="text-sm font-semibold uppercase tracking-normal">Type d'accès</p>
+            <div className="grid h-10 grid-cols-2 gap-2">
               <Button
                 type="button"
                 variant={isPublicPlace === true ? "primary" : "outline"}
                 size="sm"
+                className="h-10 w-full"
                 onClick={() => setIsPublicPlace(true)}
               >
                 Public
@@ -395,6 +397,7 @@ function ReviewForm({ placeId }: { placeId: number }) {
                 type="button"
                 variant={isPublicPlace === false ? "primary" : "outline"}
                 size="sm"
+                className="h-10 w-full"
                 onClick={() => setIsPublicPlace(false)}
               >
                 À vérifier
@@ -430,22 +433,9 @@ function ReviewForm({ placeId }: { placeId: number }) {
           </div>
         </div>
         <div className="grid gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h4 className="font-bold">Images de ton passage</h4>
-              <p className="text-sm text-muted">Elles rejoignent la galerie du spot avec ton profil.</p>
-            </div>
-            {images.length < 8 ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setImages((current) => [...current, { externalUrl: "", caption: "" }])}
-              >
-                <Plus className="size-4" aria-hidden="true" />
-                Ajouter une image
-              </Button>
-            ) : null}
+          <div>
+            <h4 className="font-bold">Images de ton passage</h4>
+            <p className="text-sm text-muted">Elles rejoignent la galerie du spot avec ton profil.</p>
           </div>
           {images.map((image, index) => (
             <div key={index} className="grid gap-3 border border-line bg-paper p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
@@ -516,6 +506,18 @@ function ReviewForm({ placeId }: { placeId: number }) {
               </div>
             </div>
           ))}
+          {images.length < 8 ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="justify-self-start"
+              onClick={() => setImages((current) => [...current, { externalUrl: "", caption: "" }])}
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              Ajouter une autre image
+            </Button>
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p
