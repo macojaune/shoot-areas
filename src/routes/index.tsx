@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { MapPin, Tag } from "lucide-react"
+import { Tag } from "lucide-react"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
 import { PlaceCard } from "~/components/place-card"
+import { FeaturedSpot } from "~/components/featured-spot"
 import {
   listCategories,
   listPlaces,
@@ -27,7 +28,7 @@ function HomePage() {
   return (
     <main>
       <section className="border-b border-line bg-sun">
-        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-10 lg:grid-cols-[0.9fr_1.1fr] lg:py-14">
+        <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14 lg:py-14">
           <div className="flex flex-col justify-center gap-6">
             <div className="space-y-4">
               <h1 className="display-title max-w-3xl text-5xl md:text-7xl">
@@ -41,29 +42,16 @@ function HomePage() {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-            {recentPlaces.length > 0 ? (
-              recentPlaces.map((place, index) => (
-                <Link
-                  key={place.id}
-                  to="/lieux/$slug"
-                  params={{ slug: place.slug }}
-                  className="group grid min-h-32 gap-2 border border-line bg-surface p-4 transition-colors hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
-                >
-                  <span className="text-sm font-bold text-clay">Nouveau repérage {String(index + 1).padStart(2, "0")}</span>
-                  <span className="section-title text-2xl transition-transform group-hover:translate-x-1">{place.title}</span>
-                  <span className="flex items-center gap-2 text-sm font-semibold text-muted">
-                    <MapPin className="size-4" aria-hidden="true" />
-                    {place.city}, {place.country}
-                  </span>
-                </Link>
-              ))
-            ) : (
-              <div className="grid min-h-48 place-items-center border border-dashed border-line bg-surface p-6 text-center text-muted">
-                Le prochain spot à documenter peut être le tien.
-              </div>
-            )}
-          </div>
+          {recentPlaces[0] ? (
+            <FeaturedSpot key={recentPlaces[0].id} place={recentPlaces[0]} />
+          ) : (
+            <div className="border border-line bg-paper p-6 sm:p-8">
+              <p className="section-title text-3xl">Le prochain spot à documenter peut être le tien.</p>
+              <Button asChild className="mt-6">
+                <Link to="/nouveau-lieu">Partager un premier repérage</Link>
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 

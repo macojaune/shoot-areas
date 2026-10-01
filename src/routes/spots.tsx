@@ -1,5 +1,6 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { Building2, MapPinned, Search, SlidersHorizontal, Tag, X } from "lucide-react"
+import { createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router"
+import { LoaderCircle, Search, SlidersHorizontal, Tag, X } from "lucide-react"
+import { useState, type FormEvent, type ReactNode } from "react"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
@@ -12,184 +13,116 @@ import {
   listPlaces,
   listPlacesFilterSchema,
   type ListPlacesFilter,
+  type PlaceListItem,
 } from "~/server/places"
 
 export const Route = createFileRoute("/spots")({
   validateSearch: (search) => listPlacesFilterSchema.parse(search),
-  loader: async ({ location }) => {
-    const search = listPlacesFilterSchema.parse(location.search)
+  loaderDeps: ({ search }) => search,
+  loader: async ({ deps }) => {
     const [allPlaces, places, categories] = await Promise.all([
       listPlaces({ data: {} }),
-      listPlaces({ data: search }),
+      listPlaces({ data: deps }),
       listCategories(),
     ])
-    return { allPlaces, places, categories }
+    return { allPlaces, places, categories, filters: deps }
   },
   component: SpotsPage,
 })
 
 function SpotsPage() {
-  const { allPlaces, places, categories } = Route.useLoaderData()
+  const { allPlaces, places, categories, filters } = Route.useLoaderData()
   const search = Route.useSearch()
-  const navigate = useNavigate({ from: Route.fullPath })
-  const countries = [...new Set(allPlaces.map((place) => place.country))].sort((a, b) =>
-    a.localeCompare(b, "fr")
-  )
-  const cities = [
-    ...new Map(
-      allPlaces.map((place) => [
-        `${place.country}::${place.city}`,
-        { country: place.country, city: place.city },
-      ])
-    ).values(),
-  ].sort((left, right) => left.city.localeCompare(right.city, "fr"))
+  const isFiltering = useRouterState({
+    select: (state) => state.isLoading && state.location.pathname === "/spots",
+  })
   const hasFilters = Boolean(
     search.query || search.category || search.country || search.city || search.sort
   )
 
-  function handleFilterSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const formData = new FormData(event.currentTarget)
-    const nextSearch: ListPlacesFilter = {}
-    const query = String(formData.get("query") ?? "").trim()
-    const country = String(formData.get("country") ?? "").trim()
-    const city = String(formData.get("city") ?? "").trim()
-    const sort = String(formData.get("sort") ?? "").trim()
-
-    if (query) nextSearch.query = query
-    if (country) nextSearch.country = country
-    if (city) nextSearch.city = city
-    if (sort === "rating" || sort === "images") nextSearch.sort = sort
-
-    void navigate({ to: "/spots", search: nextSearch })
-  }
-
   return (
     <main>
       <section className="border-b border-line bg-sun">
-        <div className="mx-auto grid max-w-7xl gap-6 px-5 py-12 md:grid-cols-[1fr_auto] md:items-end md:py-16">
-          <div>
-            <h1 className="display-title max-w-3xl text-5xl md:text-7xl">Tous les spots</h1>
-            <p className="mt-4 max-w-2xl text-lg font-medium leading-8">
-              Cherche un décor, affine un territoire ou prépare une sortie avec les
-              repères partagés par la communauté.
-            </p>
-          </div>
-          <Button asChild size="lg">
-            <Link to="/nouveau-lieu">Ajouter un spot</Link>
-          </Button>
+        <div className="mx-auto max-w-7xl px-5 py-10 md:py-12">
+          <h1 className="display-title max-w-3xl text-5xl md:text-7xl">Tous les spots</h1>
+          <p className="mt-4 max-w-2xl text-lg font-medium leading-8">
+            Cherche un décor, affine un territoire ou prépare une sortie avec les
+            repères partagés par la communauté.
+          </p>
         </div>
       </section>
 
-      <section className="border-b border-line bg-surface">
+      <section className="border-b border-line bg-surface" aria-label="Filtrer les spots">
         <div className="mx-auto max-w-7xl px-5 py-7">
-          <form onSubmit={handleFilterSubmit} className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,0.7fr))_auto] lg:items-end">
-            <div className="grid gap-2">
-              <Label htmlFor="spots-query">Rechercher</Label>
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden="true" />
-                <Input
-                  id="spots-query"
-                  name="query"
-                  defaultValue={search.query}
-                  placeholder="Nom, ville, ambiance, accès..."
-                  className="pl-10"
-                />
-              </div>
+          <SpotFilters
+            key={JSON.stringify(search)}
+            search={search}
+            allPlaces={allPlaces}
+            isFiltering={isFiltering}
+          />
+          <div className="mt-5 grid gap-3 border-t border-line pt-5">
+            <p className="flex items-center gap-2 text-sm font-bold text-muted" id="spots-categories">
+              <Tag className="size-4" aria-hidden="true" />
+              Catégories
+            </p>
+            <div className="flex flex-wrap gap-2" role="group" aria-labelledby="spots-categories">
+              {categories.map((category) => {
+                const selected = search.category === category.slug
+                return (
+                  <Badge
+                    key={category.slug}
+                    asChild
+                    className={selected ? "min-h-9 bg-sun text-ink" : "min-h-9 bg-lagoon/15 hover:bg-sun focus-visible:bg-sun"}
+                  >
+                    <Link
+                      to="/spots"
+                      search={{ ...search, category: selected ? undefined : category.slug }}
+                      aria-label={selected ? `Retirer le filtre ${category.title}` : category.title}
+                      aria-current={selected ? "true" : undefined}
+                    >
+                      {category.title}
+                      {selected ? <X className="size-3.5" aria-hidden="true" /> : null}
+                    </Link>
+                  </Badge>
+                )
+              })}
             </div>
-            <SelectField id="spots-country" label="Région" name="country" defaultValue={search.country}>
-              <option value="">Toutes les régions</option>
-              {countries.map((country) => (
-                <option key={country} value={country}>{country}</option>
-              ))}
-            </SelectField>
-            <SelectField id="spots-city" label="Commune" name="city" defaultValue={search.city}>
-              <option value="">Toutes les communes</option>
-              {cities.map(({ country, city }) => (
-                <option key={`${country}-${city}`} value={city}>{city}</option>
-              ))}
-            </SelectField>
-            <SelectField id="spots-sort" label="Trier" name="sort" defaultValue={search.sort}>
-              <option value="">Plus récents</option>
-              <option value="rating">Mieux notés</option>
-              <option value="images">Plus documentés</option>
-            </SelectField>
-            <Button type="submit" variant="secondary" className="min-h-10">
-              <SlidersHorizontal className="size-4" aria-hidden="true" />
-              Filtrer
-            </Button>
-          </form>
-
-          <div className="mt-5 grid gap-4 border-t border-line pt-5">
-            <FilterRow icon={Tag} label="Catégories">
-              {categories.map((category) => (
-                <Badge
-                  key={category.slug}
-                  asChild
-                  className={
-                    search.category === category.slug
-                      ? "bg-ink text-paper hover:bg-clay"
-                      : "bg-lagoon/15 hover:bg-lagoon/30"
-                  }
-                >
-                  <Link to="/spots" search={{ ...search, category: category.slug }}>
-                    {category.title}
-                  </Link>
-                </Badge>
-              ))}
-            </FilterRow>
-            <FilterRow icon={MapPinned} label="Régions">
-              {countries.map((country) => (
-                <Badge key={country} asChild className="hover:bg-paper">
-                  <Link to="/spots" search={{ ...search, country, city: undefined }}>
-                    <MapPinned className="size-3.5" aria-hidden="true" />
-                    {country}
-                  </Link>
-                </Badge>
-              ))}
-            </FilterRow>
-            <FilterRow icon={Building2} label="Communes">
-              {cities.map(({ country, city }) => (
-                <Badge key={`${country}-${city}`} asChild className="hover:bg-paper">
-                  <Link to="/spots" search={{ ...search, country, city }}>
-                    <Building2 className="size-3.5" aria-hidden="true" />
-                    {city}
-                  </Link>
-                </Badge>
-              ))}
-            </FilterRow>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 py-12">
+      <section className="mx-auto max-w-7xl px-5 py-12" aria-busy={isFiltering}>
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-sm font-bold text-muted">{places.length} résultat{places.length > 1 ? "s" : ""}</p>
+            <p className="text-sm font-bold text-muted" role="status" aria-atomic="true">
+              {isFiltering ? "Recherche en cours…" : `${places.length} résultat${places.length > 1 ? "s" : ""}`}
+            </p>
             <h2 className="section-title mt-1 text-4xl">À explorer maintenant</h2>
           </div>
           {hasFilters ? (
             <Button asChild variant="ghost">
-              <Link to="/spots">
+              <Link to="/spots" search={{}}>
                 <X className="size-4" aria-hidden="true" />
                 Effacer les filtres
               </Link>
             </Button>
           ) : null}
         </div>
-        {places.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {places.map((place) => <PlaceCard key={place.id} place={place} />)}
-          </div>
-        ) : (
-          <Card className="grid gap-4 p-8 text-center">
-            <h3 className="section-title text-3xl">Aucun spot ne correspond</h3>
-            <p className="text-muted">Essaie une autre recherche ou élargis le territoire.</p>
-            <Button asChild variant="outline" className="mx-auto">
-              <Link to="/spots">Voir tous les spots</Link>
-            </Button>
-          </Card>
-        )}
+        <div key={JSON.stringify(filters)} className="results-reveal">
+          {places.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {places.map((place) => <PlaceCard key={place.id} place={place} />)}
+            </div>
+          ) : (
+            <Card className="grid gap-4 p-8 text-center">
+              <h3 className="section-title text-3xl">Aucun spot ne correspond</h3>
+              <p className="text-muted">Essaie une autre recherche ou élargis le territoire.</p>
+              <Button asChild variant="outline" className="mx-auto">
+                <Link to="/spots" search={{}}>Voir tous les spots</Link>
+              </Button>
+            </Card>
+          )}
+        </div>
       </section>
 
       <PlaceMap places={places} />
@@ -197,50 +130,97 @@ function SpotsPage() {
   )
 }
 
+function SpotFilters({
+  search,
+  allPlaces,
+  isFiltering,
+}: {
+  search: ListPlacesFilter
+  allPlaces: PlaceListItem[]
+  isFiltering: boolean
+}) {
+  const navigate = useNavigate({ from: Route.fullPath })
+  const [country, setCountry] = useState(search.country ?? "")
+  const [city, setCity] = useState(search.city ?? "")
+  const [sort, setSort] = useState(search.sort === "recent" ? "" : search.sort ?? "")
+  const countries = [...new Set(allPlaces.map((place) => place.country))].sort((a, b) =>
+    a.localeCompare(b, "fr")
+  )
+  const cities = [...new Set(
+    allPlaces.filter((place) => !country || place.country === country).map((place) => place.city)
+  )].sort((a, b) => a.localeCompare(b, "fr"))
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const formData = new FormData(event.currentTarget)
+    const query = String(formData.get("query") ?? "").trim()
+    const nextSearch: ListPlacesFilter = {
+      category: search.category,
+      query: query || undefined,
+      country: country || undefined,
+      city: city || undefined,
+      sort: sort === "rating" || sort === "images" ? sort : undefined,
+    }
+    void navigate({ to: "/spots", search: nextSearch })
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,0.7fr))_auto] lg:items-end">
+      <div className="grid gap-2 sm:col-span-2 lg:col-span-1">
+        <Label htmlFor="spots-query">Rechercher</Label>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 text-muted -translate-y-1/2" aria-hidden="true" />
+          <Input id="spots-query" name="query" defaultValue={search.query ?? ""} placeholder="Nom, ville, ambiance…" className="h-11 pl-10" />
+        </div>
+      </div>
+      <SelectField id="spots-country" label="Région" name="country" value={country} onChange={(value) => { setCountry(value); setCity("") }}>
+        <option value="">Toutes les régions</option>
+        {countries.map((value) => <option key={value} value={value}>{value}</option>)}
+      </SelectField>
+      <SelectField id="spots-city" label="Commune" name="city" value={city} onChange={setCity}>
+        <option value="">Toutes les communes</option>
+        {cities.map((value) => <option key={value} value={value}>{value}</option>)}
+      </SelectField>
+      <SelectField id="spots-sort" label="Trier" name="sort" value={sort} onChange={setSort}>
+        <option value="">Plus récents</option>
+        <option value="rating">Mieux notés</option>
+        <option value="images">Plus documentés</option>
+      </SelectField>
+      <Button type="submit" variant="secondary" disabled={isFiltering} className="h-11 sm:self-end">
+        {isFiltering ? <LoaderCircle className="feedback-spinner size-4" aria-hidden="true" /> : <SlidersHorizontal className="size-4" aria-hidden="true" />}
+        {isFiltering ? "Recherche…" : "Filtrer"}
+      </Button>
+    </form>
+  )
+}
+
 function SelectField({
   id,
   label,
   name,
-  defaultValue,
+  value,
+  onChange,
   children,
 }: {
   id: string
   label: string
   name: string
-  defaultValue?: string
-  children: React.ReactNode
+  value: string
+  onChange: (value: string) => void
+  children: ReactNode
 }) {
   return (
-    <div className="grid gap-2">
+    <div className="grid min-w-0 gap-2">
       <Label htmlFor={id}>{label}</Label>
       <select
         id={id}
         name={name}
-        defaultValue={defaultValue ?? ""}
-        className="h-10 border border-line bg-paper px-3 text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-sun"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-11 w-full min-w-0 border border-line bg-paper px-3 text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-sun"
       >
         {children}
       </select>
-    </div>
-  )
-}
-
-function FilterRow({
-  icon: Icon,
-  label,
-  children,
-}: {
-  icon: typeof Tag
-  label: string
-  children: React.ReactNode
-}) {
-  return (
-    <div className="grid gap-2">
-      <p className="flex items-center gap-2 text-sm font-bold text-muted">
-        <Icon className="size-4" aria-hidden="true" />
-        {label}
-      </p>
-      <div className="flex flex-wrap gap-2">{children}</div>
     </div>
   )
 }

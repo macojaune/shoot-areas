@@ -43,6 +43,16 @@
   select {
     font: inherit;
   }
+
+  ::selection {
+    color: var(--color-paper);
+    background: var(--color-ink);
+  }
+
+  input,
+  textarea {
+    caret-color: var(--color-ink);
+  }
 }
 
 @layer components {
@@ -90,5 +100,116 @@
     border: 1px solid var(--color-line);
     border-radius: 0;
     box-shadow: 4px 4px 0 rgb(23 23 23 / 0.16);
+  }
+}
+
+@layer components {
+  .button-feedback,
+  .filter-feedback {
+    transition:
+      background-color 140ms ease-out,
+      color 140ms ease-out,
+      box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .button-arrow {
+    transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @media (hover: hover) {
+    .button-feedback:not(:disabled):hover {
+      box-shadow: 3px 3px 0 var(--color-ink);
+    }
+
+    .button-feedback:hover .button-arrow {
+      transform: translateX(3px);
+    }
+  }
+
+  .button-feedback:focus-visible .button-arrow {
+    transform: translateX(3px);
+  }
+
+  .button-feedback:not(:disabled):active {
+    box-shadow: none;
+    transform: translate(2px, 2px);
+  }
+
+  .filter-feedback:active {
+    background: var(--color-sun);
+    color: var(--color-ink);
+    transform: scale(0.96);
+  }
+
+  .feedback-spinner {
+    animation: feedback-spin 800ms linear infinite;
+  }
+
+  .navigation-progress {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 100;
+    height: 4px;
+    overflow: hidden;
+    background: var(--color-ink);
+    pointer-events: none;
+  }
+
+  .navigation-progress > span {
+    display: block;
+    height: 100%;
+    width: 40%;
+    background: var(--color-sun);
+    animation: navigation-sweep 1100ms ease-in-out infinite;
+  }
+
+  .results-reveal {
+    animation: results-arrive 180ms ease-out;
+  }
+
+  @keyframes feedback-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes navigation-sweep {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(350%); }
+  }
+
+  @keyframes results-arrive {
+    from { opacity: 0.65; }
+    to { opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .button-feedback,
+    .filter-feedback {
+      transition: background-color 100ms ease-out, color 100ms ease-out;
+    }
+
+    .button-feedback:active,
+    .filter-feedback:active,
+    .button-feedback:hover .button-arrow,
+    .button-feedback:focus-visible .button-arrow {
+      transform: none;
+    }
+
+    .button-arrow {
+      transition: none;
+    }
+
+    .feedback-spinner,
+    .navigation-progress > span {
+      animation: none;
+    }
+
+    .navigation-progress > span {
+      width: 100%;
+    }
+
+    .results-reveal {
+      animation-duration: 100ms;
+    }
   }
 }

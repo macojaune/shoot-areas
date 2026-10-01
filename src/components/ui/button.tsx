@@ -4,14 +4,14 @@ import * as React from "react"
 import { cn } from "~/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 border border-line font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:pointer-events-none disabled:opacity-50",
+  "button-feedback data-[transitioning]:bg-sun data-[transitioning]:text-ink data-[transitioning]:cursor-progress inline-flex shrink-0 items-center justify-center gap-2 border border-line font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        primary: "bg-ink text-[#fffaf2] hover:bg-clay hover:text-[#fffaf2]",
-        secondary: "bg-sun text-ink hover:bg-lagoon",
-        outline: "bg-surface text-ink hover:bg-paper",
-        ghost: "border-transparent bg-transparent text-ink hover:bg-paper",
+        primary: "bg-ink text-paper hover:bg-sun hover:text-ink focus-visible:bg-sun focus-visible:text-ink active:bg-sun active:text-ink",
+        secondary: "bg-sun text-ink hover:bg-sun focus-visible:bg-sun active:bg-sun",
+        outline: "bg-surface text-ink hover:bg-sun focus-visible:bg-sun active:bg-sun",
+        ghost: "border-transparent bg-transparent text-ink hover:bg-sun/25 focus-visible:bg-sun/25 active:bg-sun",
       },
       size: {
         sm: "h-9 px-3 text-sm",

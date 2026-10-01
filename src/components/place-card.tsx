@@ -1,13 +1,13 @@
 import { Link } from "@tanstack/react-router"
 import { Camera, MapPin } from "lucide-react"
 import { Badge } from "~/components/ui/badge"
-import { Button } from "~/components/ui/button"
+import { SpotLink } from "~/components/spot-link"
 import { Card } from "~/components/ui/card"
-import { isSocialUrl } from "~/components/spot-media"
+import { selectPlaceThumbnail } from "~/lib/place-images"
 import type { PlaceListItem } from "~/server/places"
 
 export function PlaceCard({ place }: { place: PlaceListItem }) {
-  const image = selectThumbnail(place)
+  const image = selectPlaceThumbnail(place)
 
   return (
     <Card className="flex h-full flex-col overflow-hidden">
@@ -49,24 +49,8 @@ export function PlaceCard({ place }: { place: PlaceListItem }) {
             {place.description}
           </p>
         </div>
-        <Button asChild variant="outline" className="mt-auto w-full">
-          <Link to="/lieux/$slug" params={{ slug: place.slug }}>
-            Voir le spot
-          </Link>
-        </Button>
+        <SpotLink slug={place.slug} className="mt-auto w-full justify-between" />
       </div>
     </Card>
   )
-}
-
-function selectThumbnail(place: PlaceListItem) {
-  const candidates = place.images.filter(
-    (image) => image.previewUrl || !isSocialUrl(image.externalUrl)
-  )
-  if (candidates.length === 0) return null
-
-  const seed = `${place.id}:${place.images.length}`
-    .split("")
-    .reduce((total, character) => total + character.charCodeAt(0), 0)
-  return candidates[seed % candidates.length]
 }

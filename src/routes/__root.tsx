@@ -13,6 +13,7 @@ import { PostHogProvider, usePostHog } from "@posthog/react"
 import * as React from "react"
 import appCss from "~/styles/app.css?url"
 import { Button } from "~/components/ui/button"
+import { NavigationFeedback } from "~/components/navigation-feedback"
 import { isClerkClientConfigured } from "~/lib/clerk"
 
 export const Route = createRootRoute({
@@ -81,22 +82,23 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         >
         <MaybeClerkProvider enabled={clerkConfigured}>
           <div className="min-h-screen bg-paper text-ink">
+            <NavigationFeedback />
             <header className="border-b border-line bg-surface">
-              <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4">
+              <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-5 py-4 sm:gap-4">
                 <Link
                   to="/"
-                  className="flex min-w-0 items-center gap-2.5 text-3xl"
+                  className="flex min-w-0 items-center gap-2 text-xl min-[400px]:text-2xl sm:gap-2.5 sm:text-3xl"
                 >
                   <img
                     src="/favicon.svg"
                     alt=""
                     aria-hidden="true"
-                    className="size-8 shrink-0"
+                    className="size-6 shrink-0 sm:size-8"
                   />
                   <span className="brand-mark truncate">Shootareas</span>
                 </Link>
                 <nav aria-label="Navigation principale" className="flex items-center gap-2">
-                  <Button asChild variant="secondary">
+                  <Button asChild variant="secondary" className="whitespace-nowrap px-3 text-sm sm:px-4 sm:text-base">
                     <Link to="/nouveau-lieu">Ajouter un spot</Link>
                   </Button>
                   <AccountMenu clerkConfigured={clerkConfigured} />
