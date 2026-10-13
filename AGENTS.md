@@ -102,6 +102,13 @@ Core tables live in `src/server/db/schema.ts`:
 
 Images are credited external URLs or direct uploads to a configured R2 bucket via short-lived signed URLs. Keep both paths; do not add another storage system. R2 configuration is optional for public browsing and external-image contributions; verify that configuration before claiming uploads work. Instagram previews additionally require the optional server-only `META_APP_ACCESS_TOKEN`.
 
+R2 uses one dedicated project bucket, `shootareas-media`, with `dev/` and `prod/`
+object prefixes. The server-only `R2_ENVIRONMENT` must explicitly be `dev` or
+`prod`; never derive it from `NODE_ENV`. The current `develop` application uses
+`dev`. Upload keys are `<environment>/spots/<Clerk user ID>/<UUID>.<extension>`.
+Keep existing stored media URLs unchanged. R2 secrets belong at runtime only,
+never in build arguments or `VITE_` variables.
+
 Do not migrate or rely on old local demo DB data. The clean schema and seed data are the source of truth.
 
 ## Product Behavior

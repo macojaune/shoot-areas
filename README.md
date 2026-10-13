@@ -105,9 +105,30 @@ l'environnement local et dans Coolify :
 - `R2_SECRET_ACCESS_KEY`
 - `R2_BUCKET=shootareas-media`
 - `R2_PUBLIC_URL`
+- `R2_ENVIRONMENT=dev` (ou `prod` pour la production)
 - `META_APP_ACCESS_TOKEN` (optionnel, pour l'aperçu des nouveaux posts Instagram)
 
 Crée une paire de clés S3 R2 limitée à la lecture et l'écriture des objets du
 bucket `shootareas-media`. La politique CORS utilisée par le bucket est versionnée
 dans `config/r2-cors.json` et autorise uniquement le serveur local et le domaine
 public de Shootareas.
+
+Un bucket est dédié au projet : `shootareas-media`. Les environnements utilisent
+des préfixes dans ce même bucket : `dev/spots/<membre>/<identifiant>.<extension>`
+et `prod/spots/<membre>/<identifiant>.<extension>`. R2 représente les dossiers
+par des préfixes de clés ; aucun bucket supplémentaire par environnement n'est
+nécessaire. Les URL déjà enregistrées restent inchangées.
+
+`R2_ENVIRONMENT` est obligatoire, validé côté serveur et indépendant de
+`NODE_ENV` : l'application déployée depuis `develop` utilise `dev`, même si
+Node fonctionne en mode production. Le navigateur ne choisit ni l'environnement,
+ni l'identifiant du membre, ni la clé objet. Une valeur absente ou différente de
+`dev`/`prod` désactive l'upload au lieu d'écrire dans un emplacement implicite.
+
+Dans Coolify, conserver toutes les variables R2 **uniquement au runtime**, sans
+préfixe `VITE_` et sans disponibilité au build. Les credentials doivent être
+limités aux objets du bucket du projet. Les préfixes organisent les environnements ;
+ils ne sont pas une barrière d'accès entre détenteurs des credentials du bucket.
+Le domaine `r2.dev` existant sert la recette DEV ; préparer un domaine dédié avant
+un lancement en production, conformément aux
+[recommandations Cloudflare](https://developers.cloudflare.com/r2/buckets/public-buckets/).
