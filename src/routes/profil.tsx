@@ -29,7 +29,8 @@ function toSocialLinkDraft(link: SocialLink): SocialLinkDraft {
 }
 
 export const Route = createFileRoute("/profil")({
-  beforeLoad: async () => await requireUser(),
+  beforeLoad: async ({ location }) =>
+    await requireUser({ data: { returnTo: location.href } }),
   loader: async () => {
     const [profile, dashboard] = await Promise.all([
       getCurrentContributorProfile(),

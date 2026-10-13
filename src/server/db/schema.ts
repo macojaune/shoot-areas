@@ -8,6 +8,24 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core"
 
+// Official commune centres are navigation aids, never a spot's exact position.
+export const communes = sqliteTable(
+  "communes",
+  {
+    code: text("code").primaryKey(),
+    name: text("name").notNull(),
+    normalizedName: text("normalized_name").notNull(),
+    territory: text("territory").notNull(),
+    departmentCode: text("department_code").notNull(),
+    latitude: real("latitude").notNull(),
+    longitude: real("longitude").notNull(),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    territoryNameIdx: index("communes_territory_name_idx").on(table.territory, table.normalizedName),
+  })
+)
+
 export const places = sqliteTable(
   "places",
   {

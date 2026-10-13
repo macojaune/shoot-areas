@@ -1,5 +1,5 @@
 import { Show } from "@clerk/tanstack-react-start"
-import { Link, useRouter } from "@tanstack/react-router"
+import { Link, useLocation, useRouter } from "@tanstack/react-router"
 import { useServerFn } from "@tanstack/react-start"
 import { usePostHog } from "@posthog/react"
 import { Plus, Star, Trash2, Upload } from "lucide-react"
@@ -216,6 +216,7 @@ function Rating({ rating }: { rating: number }) {
 }
 
 function ReviewComposer({ placeId }: { placeId: number }) {
+  const returnTo = useLocation({ select: (location) => location.href })
   const clerkConfigured = isClerkClientConfigured()
 
   if (!clerkConfigured) {
@@ -233,7 +234,7 @@ function ReviewComposer({ placeId }: { placeId: number }) {
         <div className="flex flex-wrap items-center justify-between gap-4 border border-line bg-surface p-5">
           <p className="text-muted">Tu connais ce spot ? Ajoute ton observation et tes images.</p>
           <Button asChild variant="secondary">
-            <Link to="/sign-in/$" params={{ _splat: "" }}>
+            <Link to="/sign-in/$" params={{ _splat: "" }} search={{ redirect_url: returnTo }}>
               Se connecter pour contribuer
             </Link>
           </Button>

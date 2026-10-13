@@ -2,22 +2,27 @@ import { createFileRoute } from "@tanstack/react-router"
 import { PlaceForm } from "~/components/place-form"
 import { requireUser } from "~/server/auth"
 import { getCurrentContributorProfile } from "~/server/contributor"
-import { listCategories } from "~/server/places"
+import { listCategories, listPlaces } from "~/server/places"
 
 export const Route = createFileRoute("/nouveau-lieu")({
-  beforeLoad: async () => await requireUser(),
+  beforeLoad: async ({ location }) =>
+    await requireUser({ data: { returnTo: location.href } }),
   loader: async () => {
-    const [categories, contributorProfile] = await Promise.all([
+    const [categories, contributorProfile, places] = await Promise.all([
       listCategories(),
       getCurrentContributorProfile(),
+      listPlaces({ data: {} }),
     ])
-    return { categories, contributorProfile }
+    const existingPlaces = places.map(({ id, title, slug, city, country, latitude, longitude }) => ({
+      id, title, slug, city, country, latitude, longitude,
+    }))
+    return { categories, contributorProfile, existingPlaces }
   },
   component: NewPlacePage,
 })
 
 function NewPlacePage() {
-  const { categories, contributorProfile } = Route.useLoaderData()
+  const { categories, contributorProfile, existingPlaces } = Route.useLoaderData()
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-10">
@@ -29,7 +34,7 @@ function NewPlacePage() {
           des images.
         </p>
       </div>
-      <PlaceForm categories={categories} contributorProfile={contributorProfile} />
+      <PlaceForm categories={categories} contributorProfile={contributorProfile} existingPlaces={existingPlaces} />
     </main>
   )
 }
