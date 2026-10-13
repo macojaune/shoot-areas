@@ -156,7 +156,18 @@ function MaybeClerkProvider({
   children: React.ReactNode
 }) {
   if (!enabled) return <>{children}</>
-  return <ClerkProvider localization={frFR}>{children}</ClerkProvider>
+  return (
+    <ClerkProvider
+      localization={frFR}
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+      signInFallbackRedirectUrl="/"
+      signUpFallbackRedirectUrl="/"
+      afterSignOutUrl="/"
+    >
+      {children}
+    </ClerkProvider>
+  )
 }
 
 function AccountMenu({ clerkConfigured }: { clerkConfigured: boolean }) {

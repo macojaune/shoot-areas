@@ -6,7 +6,9 @@ import { MapPin, Plus, Trash2, Upload } from "lucide-react"
 import * as React from "react"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
-import { LocationPicker } from "~/components/interactive-map"
+import { LocationPicker, type ExistingMapPlace } from "~/components/interactive-map"
+import { CommuneInput } from "~/components/commune-input"
+import { territories, type Commune } from "~/lib/communes"
 import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
 import { Textarea } from "~/components/ui/textarea"
@@ -29,18 +31,6 @@ const emptyImage: ImageDraft = {
   caption: "",
 }
 
-const territories = [
-  "Guadeloupe",
-  "Martinique",
-  "Guyane française",
-  "La Réunion",
-  "Mayotte",
-  "Saint-Barthélemy",
-  "Saint-Martin",
-  "France",
-  "Autre",
-]
-
 function FieldError({ errors }: { errors: unknown[] }) {
   return (
     <p className="min-h-5 text-sm leading-5 font-semibold text-clay" aria-live="polite">
@@ -52,9 +42,11 @@ function FieldError({ errors }: { errors: unknown[] }) {
 export function PlaceForm({
   categories,
   contributorProfile,
+  existingPlaces,
 }: {
   categories: Category[]
   contributorProfile: ContributorProfile
+  existingPlaces: ExistingMapPlace[]
 }) {
   const router = useRouter()
   const posthog = usePostHog()
@@ -79,6 +71,7 @@ export function PlaceForm({
     "idle" | "locating" | "success" | "error"
   >("idle")
   const [locationMessage, setLocationMessage] = React.useState("")
+  const [selectedCommune, setSelectedCommune] = React.useState<Commune | null>(null)
   const fileInputs = React.useRef<Record<number, HTMLInputElement | null>>({})
 
   const form = useForm({
@@ -263,7 +256,11 @@ export function PlaceForm({
                   className="h-12 w-full border border-line bg-surface px-3 text-base outline-none transition focus:ring-2 focus:ring-sun"
                   value={field.state.value}
                   onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
+                  onChange={(event) => {
+                    field.handleChange(event.target.value)
+                    form.setFieldValue("city", "")
+                    setSelectedCommune(null)
+                  }}
                 >
                   {territories.map((territory) => (
                     <option key={territory} value={territory}>
@@ -285,14 +282,21 @@ export function PlaceForm({
             {(field) => (
               <div className="grid gap-2">
                 <Label htmlFor={field.name}>Ville / commune</Label>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  value={field.state.value}
-                  placeholder="Les Abymes"
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                />
+                <form.Subscribe selector={(state) => state.values.country}>
+                  {(territory) => (
+                    <CommuneInput
+                      key={territory}
+                      territory={territory}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(value) => {
+                        field.handleChange(value)
+                        setSelectedCommune(null)
+                      }}
+                      onSelect={setSelectedCommune}
+                    />
+                  )}
+                </form.Subscribe>
                 <FieldError errors={field.state.meta.errors} />
               </div>
             )}
@@ -416,6 +420,8 @@ export function PlaceForm({
               <LocationPicker
                 latitude={latitude === "" ? null : Number(latitude)}
                 longitude={longitude === "" ? null : Number(longitude)}
+                center={selectedCommune}
+                existingPlaces={existingPlaces}
                 onChange={({ latitude: nextLatitude, longitude: nextLongitude }) => {
                   form.setFieldValue("latitude", String(nextLatitude))
                   form.setFieldValue("longitude", String(nextLongitude))

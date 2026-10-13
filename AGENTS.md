@@ -97,8 +97,10 @@ Core tables live in `src/server/db/schema.ts`:
 - `placeImages`
 - `categories`
 - `categoriesToPlaces`
+- `contributorProfiles`, `placeFavorites`, `placeReviews`, `placeReviewImages`
+- `communes` (official centres cached for the contribution form)
 
-MVP images are external URLs with credits. Do not add upload/storage work unless explicitly requested.
+Images are credited external URLs or direct uploads to a configured R2 bucket via short-lived signed URLs. Keep both paths; do not add another storage system. R2 configuration is optional for public browsing and external-image contributions; verify that configuration before claiming uploads work. Instagram previews additionally require the optional server-only `META_APP_ACCESS_TOKEN`.
 
 Do not migrate or rely on old local demo DB data. The clean schema and seed data are the source of truth.
 
@@ -107,13 +109,16 @@ Do not migrate or rely on old local demo DB data. The clean schema and seed data
 Public routes:
 
 - `/`
+- `/spots`
 - `/lieux/$slug`
+- `/eclaireurs/$userId`
 - `/sign-in/$`
 - `/sign-up/$`
 
-Protected route:
+Protected routes:
 
 - `/nouveau-lieu`
+- `/profil`
 
 Logged-out users should be redirected from `/nouveau-lieu` to sign-in.
 
@@ -155,10 +160,10 @@ Important CSS note: global base styles belong inside `@layer base` in `src/style
 
 This repository uses Jujutsu (`jj`) alongside git. Prefer `jj status`, `jj diff`, and `jj log` for quick local state inspection when useful, then make sure the git branch is exported/pushed correctly for remote delivery.
 
-Default active rebuild branch:
+Current MVP base branch (verify its remote SHA before each task):
 
 ```text
-feature/tanstack-start-rebuild
+develop
 ```
 
 Deploy branch:

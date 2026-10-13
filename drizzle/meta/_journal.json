@@ -29,6 +29,13 @@
       "when": 1788325530140,
       "tag": "0003_flat_talkback",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1791879651960,
+      "tag": "0004_commune_centres",
+      "breakpoints": true
     }
   ]
 }

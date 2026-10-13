@@ -1,29 +1,34 @@
 import { SignUp } from "@clerk/tanstack-react-start"
-import { createFileRoute } from "@tanstack/react-router"
-import { Card } from "~/components/ui/card"
+import { createFileRoute, redirect } from "@tanstack/react-router"
+import { AuthPage } from "~/components/auth-page"
+import { getSafeAuthRedirect, validateAuthSearch } from "~/lib/auth-redirect"
 import { isClerkClientConfigured } from "~/lib/clerk"
+import { getAuthState } from "~/server/auth"
 
 export const Route = createFileRoute("/sign-up/$")({
+  validateSearch: validateAuthSearch,
+  beforeLoad: async ({ search }) => {
+    const { configured, userId } = await getAuthState()
+    if (userId) throw redirect({ href: getSafeAuthRedirect(search.redirect_url) })
+    return { authAvailable: configured }
+  },
   component: SignUpPage,
 })
 
 function SignUpPage() {
-  if (!isClerkClientConfigured()) {
-    return (
-      <main className="flex min-h-[70vh] items-center justify-center px-5 py-12">
-        <Card className="max-w-md p-6 text-center">
-          <h1 className="section-title text-3xl">Clerk non configuré</h1>
-          <p className="mt-3 text-muted">
-            Ajoute les clés Clerk dans `.env` pour tester l'inscription.
-          </p>
-        </Card>
-      </main>
-    )
-  }
+  const { authAvailable } = Route.useRouteContext()
+  const { redirect_url } = Route.useSearch()
+  const destination = getSafeAuthRedirect(redirect_url)
 
   return (
-    <main className="flex min-h-[70vh] items-center justify-center px-5 py-12">
-      <SignUp signInUrl="/sign-in" />
-    </main>
+    <AuthPage available={authAvailable && isClerkClientConfigured()}>
+      <SignUp
+        routing="path"
+        path="/sign-up"
+        signInUrl={`/sign-in?redirect_url=${encodeURIComponent(destination)}`}
+        forceRedirectUrl={destination}
+        signInForceRedirectUrl={destination}
+      />
+    </AuthPage>
   )
 }

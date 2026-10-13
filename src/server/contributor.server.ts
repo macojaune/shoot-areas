@@ -1,5 +1,5 @@
-import { auth, clerkClient } from "@clerk/tanstack-react-start/server"
-import { inArray, sql } from "drizzle-orm"
+import { clerkClient } from "@clerk/tanstack-react-start/server"
+import { eq, inArray, sql } from "drizzle-orm"
 import { z } from "zod"
 import {
   type ContributorProfile,
@@ -8,7 +8,8 @@ import {
   socialLinkSchema,
 } from "~/server/contributor"
 import { db } from "~/server/db/client"
-import { contributorProfiles, type ContributorProfileRecord } from "~/server/db/schema"
+import { getOptionalAuth, isClerkServerConfigured } from "~/server/auth.server"
+import { contributorProfiles, places, placeReviews, type ContributorProfileRecord } from "~/server/db/schema"
 
 type LegacyContributorMetadata = {
   shootareas?: {
@@ -59,7 +60,7 @@ function contributorProfileFromUser(
 }
 
 async function currentUserId() {
-  const { isAuthenticated, userId } = await auth()
+  const { isAuthenticated, userId } = await getOptionalAuth()
   if (!isAuthenticated || !userId) {
     throw new Error("Connexion requise pour gérer le profil.")
   }
@@ -86,6 +87,18 @@ export async function getContributorProfileForUser(userId: string) {
   return contributorProfileFromUser(user, records.get(userId))
 }
 
+function localContributorProfile(userId: string, record?: ContributorProfileRecord): ContributorProfile {
+  const socialLinks = parseSocialLinks(record?.socialLinks)
+  return {
+    userId,
+    creditName: "Spoteur·euse",
+    creditUrl: socialLinks[0]?.url || "",
+    imageUrl: null,
+    bio: record?.bio || "",
+    socialLinks,
+  }
+}
+
 export async function getContributorProfilesForUsers(userIds: string[]) {
   const uniqueUserIds = [...new Set(userIds)]
   const records = await getProfileRecords(uniqueUserIds)
@@ -95,15 +108,7 @@ export async function getContributorProfilesForUsers(userIds: string[]) {
         const user = await clerkClient().users.getUser(userId)
         return contributorProfileFromUser(user, records.get(userId))
       } catch {
-        const record = records.get(userId)
-        return {
-          userId,
-          creditName: "Spoteur·euse",
-          creditUrl: parseSocialLinks(record?.socialLinks)[0]?.url || "",
-          imageUrl: null,
-          bio: record?.bio || "",
-          socialLinks: parseSocialLinks(record?.socialLinks),
-        } satisfies ContributorProfile
+        return localContributorProfile(userId, records.get(userId))
       }
     })
   )
@@ -146,5 +151,26 @@ export async function updateCurrentContributorProfileHandler(data: {
 }
 
 export async function getContributorProfileByUserIdHandler(userId: string) {
-  return getContributorProfileForUser(userId)
+  if (isClerkServerConfigured()) {
+    try {
+      return await getContributorProfileForUser(userId)
+    } catch (error) {
+      if (error && typeof error === "object" && "status" in error && error.status === 404) {
+        return null
+      }
+      throw error
+    }
+  }
+
+  const records = await getProfileRecords([userId])
+  const record = records.get(userId)
+  if (record) return localContributorProfile(userId, record)
+
+  const [spotRows, reviewRows] = await Promise.all([
+    db.select({ id: places.id }).from(places).where(eq(places.createdByClerkId, userId)).limit(1),
+    db.select({ id: placeReviews.id }).from(placeReviews).where(eq(placeReviews.createdByClerkId, userId)).limit(1),
+  ])
+  return spotRows.length > 0 || reviewRows.length > 0
+    ? localContributorProfile(userId)
+    : null
 }

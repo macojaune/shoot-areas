@@ -1,12 +1,13 @@
-import { auth } from "@clerk/tanstack-react-start/server"
 import { desc, eq, inArray, sql } from "drizzle-orm"
 import { getPostHogClient } from "~/utils/posthog-server"
 import { slugify } from "~/lib/utils"
 import {
   getContributorProfileForUser,
+  getContributorProfileByUserIdHandler,
   getContributorProfilesForUsers,
 } from "~/server/contributor.server"
 import { db } from "~/server/db/client"
+import { getOptionalAuth } from "~/server/auth.server"
 import {
   categories,
   categoriesToPlaces,
@@ -29,13 +30,29 @@ import type {
   SpotImage,
 } from "~/server/places"
 
-async function getUniqueSlug(title: string) {
+async function capturePublicationEvent(event: {
+  distinctId: string
+  event: string
+  properties: Record<string, unknown>
+}) {
+  try {
+    const posthog = getPostHogClient()
+    if (!posthog) return
+    posthog.capture(event)
+    await posthog.flush()
+  } catch {
+    // The publication has committed; analytics must not turn it into a failed submission.
+    console.warn("L’événement de publication PostHog n’a pas pu être envoyé.")
+  }
+}
+
+async function getUniqueSlug(title: string, database: Pick<typeof db, "select">) {
   const base = slugify(title) || "spot"
   let candidate = base
   let suffix = 2
 
   while (true) {
-    const existing = await db
+    const existing = await database
       .select({ id: places.id })
       .from(places)
       .where(eq(places.slug, candidate))
@@ -104,8 +121,7 @@ export async function listPlacesHandler(filters: ListPlacesFilter = {}) {
   const rows = await db
     .select()
     .from(places)
-    .orderBy(desc(places.createdAt))
-    .limit(24)
+    .orderBy(desc(places.createdAt), desc(places.id))
 
   const hydratedPlaces = await hydratePlaces(rows)
   const query = filters.query?.toLocaleLowerCase("fr")
@@ -158,7 +174,7 @@ export async function getPlaceBySlugHandler(data: { slug: string }) {
   if (!place) return null
 
   const [{ userId: viewerId }, reviews, reviewImageLinks] = await Promise.all([
-    auth(),
+    getOptionalAuth(),
     db
       .select()
       .from(placeReviews)
@@ -211,7 +227,7 @@ export async function getPlaceBySlugHandler(data: { slug: string }) {
 }
 
 export async function createPlaceHandler(data: CreatePlaceInput) {
-  const { isAuthenticated, userId } = await auth()
+  const { isAuthenticated, userId } = await getOptionalAuth()
   if (!isAuthenticated || !userId) {
     throw new Error("Connexion requise pour ajouter un spot.")
   }
@@ -228,83 +244,81 @@ export async function createPlaceHandler(data: CreatePlaceInput) {
       sortOrder: index,
     })))
 
-  const slug = await getUniqueSlug(data.title)
+  const insertedPlace = await db.transaction(async (transaction) => {
+    const slug = await getUniqueSlug(data.title, transaction)
+    const [place] = await transaction
+      .insert(places)
+      .values({
+        title: data.title,
+        slug,
+        description: data.description,
+        country: data.country,
+        city: data.city,
+        address: data.address || null,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        accessNotes: data.accessNotes || null,
+        bestLight: data.bestLight || null,
+        bestPeriod: data.bestPeriod || null,
+        accessibilityLevel: data.accessibilityLevel,
+        crowdLevel: data.crowdLevel,
+        isPublicPlace: data.isPublicPlace,
+        createdByClerkId: userId,
+        updatedAt: sql`CURRENT_TIMESTAMP`,
+      })
+      .returning()
 
-  const insertedPlaces = await db
-    .insert(places)
-    .values({
-      title: data.title,
-      slug,
-      description: data.description,
-      country: data.country,
-      city: data.city,
-      address: data.address || null,
-      latitude: data.latitude,
-      longitude: data.longitude,
-      accessNotes: data.accessNotes || null,
-      bestLight: data.bestLight || null,
-      bestPeriod: data.bestPeriod || null,
-      accessibilityLevel: data.accessibilityLevel,
-      crowdLevel: data.crowdLevel,
-      isPublicPlace: data.isPublicPlace,
-      createdByClerkId: userId,
-      updatedAt: sql`CURRENT_TIMESTAMP`,
-    })
-    .returning()
+    if (!place) throw new Error("Le spot n'a pas pu être créé.")
 
-  const insertedPlace = insertedPlaces[0]
-  if (!insertedPlace) throw new Error("Le spot n'a pas pu être créé.")
-
-  if (cleanImages.length > 0) {
-    await db.insert(placeImages).values(
-      cleanImages.map((image) => ({
-        ...image,
-        placeId: insertedPlace.id,
-      }))
-    )
-  }
-
-  if (data.categorySlugs.length > 0) {
-    const selectedCategories = await db
-      .select()
-      .from(categories)
-      .where(inArray(categories.slug, data.categorySlugs))
-
-    if (selectedCategories.length > 0) {
-      await db.insert(categoriesToPlaces).values(
-        selectedCategories.map((category) => ({
-          categoryId: category.id,
-          placeId: insertedPlace.id,
+    if (cleanImages.length > 0) {
+      await transaction.insert(placeImages).values(
+        cleanImages.map((image) => ({
+          ...image,
+          placeId: place.id,
         }))
       )
     }
-  }
 
-  const posthog = getPostHogClient()
-  if (posthog) {
-    posthog.capture({
-      distinctId: userId,
-      event: 'spot_created_server',
-      properties: {
-        spot_slug: insertedPlace.slug,
-        spot_country: data.country,
-        spot_city: data.city,
-        category_count: data.categorySlugs.length,
-        image_count: cleanImages.length,
-        has_location: data.latitude !== null,
-        accessibility_level: data.accessibilityLevel,
-        crowd_level: data.crowdLevel,
-        is_public_place: data.isPublicPlace,
-      },
-    })
-    await posthog.flush()
-  }
+    if (data.categorySlugs.length > 0) {
+      const selectedCategories = await transaction
+        .select()
+        .from(categories)
+        .where(inArray(categories.slug, data.categorySlugs))
+
+      if (selectedCategories.length > 0) {
+        await transaction.insert(categoriesToPlaces).values(
+          selectedCategories.map((category) => ({
+            categoryId: category.id,
+            placeId: place.id,
+          }))
+        )
+      }
+    }
+
+    return place
+  })
+
+  await capturePublicationEvent({
+    distinctId: userId,
+    event: "spot_created_server",
+    properties: {
+      spot_slug: insertedPlace.slug,
+      spot_country: data.country,
+      spot_city: data.city,
+      category_count: data.categorySlugs.length,
+      image_count: cleanImages.length,
+      has_location: data.latitude !== null,
+      accessibility_level: data.accessibilityLevel,
+      crowd_level: data.crowdLevel,
+      is_public_place: data.isPublicPlace,
+    },
+  })
 
   return insertedPlace
 }
 
 export async function createSpotReviewHandler(data: CreateSpotReviewInput) {
-  const { isAuthenticated, userId } = await auth()
+  const { isAuthenticated, userId } = await getOptionalAuth()
   if (!isAuthenticated || !userId) {
     throw new Error("Connexion requise pour publier un avis.")
   }
@@ -329,31 +343,11 @@ export async function createSpotReviewHandler(data: CreateSpotReviewInput) {
     throw new Error("Tu as déjà publié un avis pour ce spot.")
   }
 
-  const [review] = await db
-    .insert(placeReviews)
-    .values({
-      placeId: data.placeId,
-      createdByClerkId: userId,
-      rating: data.rating,
-      content: data.content,
-      accessNotes: data.accessNotes || null,
-      bestLight: data.bestLight || null,
-      bestPeriod: data.bestPeriod || null,
-      accessibilityLevel: data.accessibilityLevel,
-      crowdLevel: data.crowdLevel,
-      isPublicPlace: data.isPublicPlace,
-      updatedAt: sql`CURRENT_TIMESTAMP`,
-    })
-    .returning()
-
-  if (!review) throw new Error("L'avis n'a pas pu être publié.")
-
   const contributorProfile = await getContributorProfileForUser(userId)
   const reviewImages = await Promise.all(
     data.images
       .filter((image) => image.externalUrl)
       .map(async (image, index) => ({
-        reviewId: review.id,
         externalUrl: image.externalUrl as string,
         previewUrl: await resolveMediaPreview(image.externalUrl as string),
         creditName: contributorProfile.creditName,
@@ -363,38 +357,59 @@ export async function createSpotReviewHandler(data: CreateSpotReviewInput) {
       }))
   )
 
-  if (reviewImages.length > 0) {
-    await db.insert(placeReviewImages).values(reviewImages)
-  }
-
-  const posthog = getPostHogClient()
-  if (posthog) {
-    posthog.capture({
-      distinctId: userId,
-      event: 'review_submitted_server',
-      properties: {
-        place_id: data.placeId,
+  const review = await db.transaction(async (transaction) => {
+    const [insertedReview] = await transaction
+      .insert(placeReviews)
+      .values({
+        placeId: data.placeId,
+        createdByClerkId: userId,
         rating: data.rating,
-        content_length: data.content.length,
-        image_count: reviewImages.length,
-        has_observation: Boolean(
-          data.accessNotes ||
-            data.bestLight ||
-            data.bestPeriod ||
-            data.accessibilityLevel ||
-            data.crowdLevel ||
-            data.isPublicPlace !== null
-        ),
-      },
-    })
-    await posthog.flush()
-  }
+        content: data.content,
+        accessNotes: data.accessNotes || null,
+        bestLight: data.bestLight || null,
+        bestPeriod: data.bestPeriod || null,
+        accessibilityLevel: data.accessibilityLevel,
+        crowdLevel: data.crowdLevel,
+        isPublicPlace: data.isPublicPlace,
+        updatedAt: sql`CURRENT_TIMESTAMP`,
+      })
+      .returning()
+
+    if (!insertedReview) throw new Error("L'avis n'a pas pu être publié.")
+
+    if (reviewImages.length > 0) {
+      await transaction.insert(placeReviewImages).values(
+        reviewImages.map((image) => ({ ...image, reviewId: insertedReview.id }))
+      )
+    }
+
+    return insertedReview
+  })
+
+  await capturePublicationEvent({
+    distinctId: userId,
+    event: "review_submitted_server",
+    properties: {
+      place_id: data.placeId,
+      rating: data.rating,
+      content_length: data.content.length,
+      image_count: reviewImages.length,
+      has_observation: Boolean(
+        data.accessNotes ||
+          data.bestLight ||
+          data.bestPeriod ||
+          data.accessibilityLevel ||
+          data.crowdLevel ||
+          data.isPublicPlace !== null
+      ),
+    },
+  })
 
   return review
 }
 
 async function requireCurrentUserId() {
-  const { isAuthenticated, userId } = await auth()
+  const { isAuthenticated, userId } = await getOptionalAuth()
   if (!isAuthenticated || !userId) {
     throw new Error("Connexion requise pour enregistrer un spot.")
   }
@@ -469,13 +484,15 @@ export async function getProfileDashboardHandler(): Promise<ProfileDashboard> {
 
 export async function getPublicContributorDashboardHandler(data: { userId: string }) {
   const [profile, spotRows] = await Promise.all([
-    getContributorProfileForUser(data.userId),
+    getContributorProfileByUserIdHandler(data.userId),
     db
       .select()
       .from(places)
       .where(eq(places.createdByClerkId, data.userId))
       .orderBy(desc(places.createdAt)),
   ])
+
+  if (!profile) return null
 
   return {
     profile,

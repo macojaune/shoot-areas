@@ -13,18 +13,73 @@ Annuaire MVP de lieux pour préparer des shootings photo, vidéo et contenus cr�
 - shadcn/ui-inspired components
 - Bun
 
-## Development
+## Développement
 
 ```bash
 bun install
-bun run db:push
+bun run db:migrate
 bun run db:seed
 bun run dev
 ```
 
-## Environment
+Le serveur utilise `http://localhost:3000`. Le seed est idempotent : il ajoute
+uniquement les catégories manquantes. Les migrations versionnées constituent le
+schéma de référence ; ne pas importer les anciennes bases de démonstration.
 
-Copy `.env.example` to `.env` and fill the Clerk keys when testing protected routes.
+## Configuration
+
+Copier `.env.example` vers `.env`. `DATABASE_URL=file:shootareas.db` crée une base
+locale ; une URL Turso distante utilise `TURSO_TOKEN` ou `TURSO_AUTH_TOKEN`.
+Utiliser une base locale dédiée pour les données fictives de recette.
+
+`VITE_CLERK_PUBLISHABLE_KEY` et `CLERK_SECRET_KEY` activent la connexion. Les pages
+publiques restent disponibles sans Clerk ; la publication, le profil, les avis
+et les favoris nécessitent une session. Ne jamais placer de clé secrète dans une
+variable `VITE_`. Pour la recette, utiliser uniquement l’instance Clerk de test.
+
+## Parcours disponibles
+
+- `/` : découverte et derniers spots.
+- `/spots` : recherche, filtres, tris et carte des spots géolocalisés.
+- `/lieux/$slug` : détails, galerie créditée, retours terrain et favoris.
+- `/nouveau-lieu` : création connectée, avec publication immédiate.
+- `/profil` : bio, liens publics, contributions et favoris personnels.
+- `/eclaireurs/$userId` : identité publique et contributions d’un membre.
+
+La connexion conserve la destination demandée. Les favoris sont privés ; la bio,
+les réseaux sociaux, les contributions et leurs crédits sont publics.
+
+## Communes
+
+La saisie d’une commune propose jusqu’à huit résultats de l’API officielle
+[Découpage administratif](https://geo.api.gouv.fr/decoupage-administratif),
+filtrés par territoire. Aucun compte API n’est nécessaire. Les centres et codes
+officiels sont conservés dans la table `communes` ; les résultats déjà connus
+peuvent être proposés explicitement depuis le cache si le service est indisponible.
+
+Choisir une commune centre la carte. Cela ne renseigne pas la position exacte du
+spot : celle-ci reste facultative et peut être placée sur la carte, géolocalisée
+ou saisie manuellement. La saisie libre reste disponible pour les autres pays ou
+en cas d’indisponibilité du service.
+
+## Vérification et démarrage de production
+
+```bash
+bun run test
+bun run typecheck
+bun run build
+git diff --check
+```
+
+Les tests métier utilisent des bases SQLite temporaires. Les appels Clerk sont
+simulés dans ces tests ; leur succès ne remplace pas une recette connectée dans
+le navigateur. Consulter `QA.md` pour les résultats et limites de la dernière passe.
+
+`bun run start` applique les migrations et les catégories puis démarre
+`node .output/server/index.mjs`. Ne pas remplacer ce démarrage par `db:push`.
+La branche de déploiement documentée est `develop` sur Coolify `vps2`, application
+`shootareas-web`, domaine `https://shootareas.marvinl.com`. Vérifier à chaque
+livraison la correspondance branche/commit/runtime ; une PR seule ne déploie pas.
 
 ## Analytics PostHog
 

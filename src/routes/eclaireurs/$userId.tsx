@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { createFileRoute, Link, notFound } from "@tanstack/react-router"
 import { ArrowLeft, Camera, MapPin } from "lucide-react"
 import { ContributorSocialLinks } from "~/components/contributor-social-links"
 import { PlaceCard } from "~/components/place-card"
@@ -7,9 +7,21 @@ import { Card } from "~/components/ui/card"
 import { getPublicContributorDashboard } from "~/server/places"
 
 export const Route = createFileRoute("/eclaireurs/$userId")({
-  loader: async ({ params }) =>
-    getPublicContributorDashboard({ data: { userId: params.userId } }),
+  loader: async ({ params }) => {
+    const dashboard = await getPublicContributorDashboard({ data: { userId: params.userId } })
+    if (!dashboard) throw notFound()
+    return dashboard
+  },
   component: ContributorPage,
+  notFoundComponent: () => (
+    <main className="mx-auto max-w-3xl px-5 py-16 text-center">
+      <h1 className="display-title text-5xl">Éclaireur·euse introuvable</h1>
+      <p className="mt-4 text-muted">Ce profil n’existe pas ou n’est plus disponible.</p>
+      <Button asChild className="mt-8">
+        <Link to="/spots">Explorer les spots</Link>
+      </Button>
+    </main>
+  ),
 })
 
 function ContributorPage() {

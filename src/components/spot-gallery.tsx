@@ -7,6 +7,19 @@ import type { SpotImage } from "~/server/places"
 
 export function SpotGallery({ images, title }: { images: SpotImage[]; title: string }) {
   const [selectedImage, setSelectedImage] = React.useState<SpotImage | null>(null)
+  const dialogRef = React.useRef<HTMLDialogElement>(null)
+
+  React.useEffect(() => {
+    const dialog = dialogRef.current
+    if (!dialog || !selectedImage) return
+    dialog.showModal()
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      dialog.close()
+      document.body.style.overflow = previousOverflow
+    }
+  }, [selectedImage])
 
   return (
     <>
@@ -15,17 +28,23 @@ export function SpotGallery({ images, title }: { images: SpotImage[]; title: str
           <GalleryTile key={image.id} image={image} title={title} onOpen={setSelectedImage} />
         ))}
       </div>
-      {selectedImage ? (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-ink/85 p-5"
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Agrandissement de ${selectedImage.caption || title}`}
-          onClick={() => setSelectedImage(null)}
+        <dialog
+          ref={dialogRef}
+          className="fixed inset-0 m-auto max-h-[calc(100dvh-2.5rem)] w-[calc(100%-2.5rem)] max-w-5xl overflow-auto bg-surface p-0 text-ink backdrop:bg-ink/85"
+          aria-label={`Agrandissement de ${selectedImage?.caption || title}`}
+          onCancel={() => setSelectedImage(null)}
+          onClose={() => setSelectedImage(null)}
+          onClick={(event) => {
+            if (event.target !== event.currentTarget) return
+            const bounds = event.currentTarget.getBoundingClientRect()
+            if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) {
+              setSelectedImage(null)
+            }
+          }}
         >
+          {selectedImage ? (
           <div
-            className="grid max-h-full w-full max-w-5xl gap-3 overflow-auto bg-surface p-4 md:p-5"
-            onClick={(event) => event.stopPropagation()}
+            className="grid gap-3 p-4 md:p-5"
           >
             <div className="flex items-center justify-between gap-4">
               <p className="min-w-0 truncate font-bold">{selectedImage.caption || title}</p>
@@ -57,8 +76,8 @@ export function SpotGallery({ images, title }: { images: SpotImage[]; title: str
               </a>
             </div>
           </div>
-        </div>
-      ) : null}
+          ) : null}
+        </dialog>
     </>
   )
 }
