@@ -28,6 +28,14 @@ export const contributorProfileSchema = z.object({
     }),
 })
 
+export function validateContributorProfile(input: unknown) {
+  const result = contributorProfileSchema.safeParse(input)
+  if (!result.success) {
+    throw new Error(result.error.issues[0]?.message || "Le profil n'a pas pu être enregistré.")
+  }
+  return result.data
+}
+
 export type SocialPlatform = (typeof socialPlatforms)[number]
 export type SocialLink = z.infer<typeof socialLinkSchema>
 
@@ -57,7 +65,7 @@ export const getCurrentContributorProfile = createServerFn({ method: "GET" }).ha
 )
 
 export const updateCurrentContributorProfile = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => contributorProfileSchema.parse(input))
+  .inputValidator(validateContributorProfile)
   .handler(async ({ data }) => {
     const { updateCurrentContributorProfileHandler } = await import(
       "~/server/contributor.server"
